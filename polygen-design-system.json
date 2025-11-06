@@ -1,0 +1,474 @@
+{
+  "designSystemName": "PolyGen",
+  "version": "1.0.0",
+  "theme": "Dark (Black-and-White)",
+  "description": "Minimalist design system for PolyGen - a creative background and fractal generator. Emphasizes clean UI with high contrast, allowing user-generated content (gradients, fractals) to take center stage.",
+  "global": {
+    "background": {
+      "app": "#0A0A0A",
+      "sidebar": "#121212",
+      "modal": "#1A1A1A",
+      "previewArea": "#0F0F0F",
+      "card": "#161616"
+    },
+    "typography": {
+      "heading1": {
+        "color": "#FAFAFA",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "28px",
+        "fontWeight": 700,
+        "lineHeight": "1.3"
+      },
+      "heading2": {
+        "color": "#FAFAFA",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "20px",
+        "fontWeight": 600,
+        "lineHeight": "1.4"
+      },
+      "heading3": {
+        "color": "#FAFAFA",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "16px",
+        "fontWeight": 600,
+        "lineHeight": "1.4"
+      },
+      "body": {
+        "color": "#E4E4E7",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "14px",
+        "fontWeight": 400,
+        "lineHeight": "1.5"
+      },
+      "label": {
+        "color": "#A1A1A6",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "12px",
+        "fontWeight": 500,
+        "lineHeight": "1.4"
+      },
+      "caption": {
+        "color": "#71717A",
+        "font": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "fontSize": "11px",
+        "fontWeight": 400,
+        "lineHeight": "1.4"
+      },
+      "link": {
+        "default": {
+          "color": "#E4E4E7",
+          "textDecoration": "underline"
+        },
+        "hover": {
+          "color": "#FAFAFA",
+          "textDecoration": "underline"
+        },
+        "active": {
+          "color": "#A1A1A6"
+        }
+      }
+    },
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "24px",
+      "2xl": "32px",
+      "3xl": "48px"
+    },
+    "borderRadius": {
+      "small": "4px",
+      "medium": "6px",
+      "large": "8px",
+      "xlarge": "12px",
+      "pill": "9999px"
+    },
+    "shadows": {
+      "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+      "md": "0 4px 6px rgba(0, 0, 0, 0.1)",
+      "lg": "0 10px 15px rgba(0, 0, 0, 0.1)",
+      "xl": "0 20px 25px rgba(0, 0, 0, 0.15)",
+      "focusRing": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+    },
+    "borders": {
+      "default": "1px solid #27272A",
+      "light": "1px solid #3F3F46",
+      "subtle": "1px solid #18181B",
+      "focus": "2px solid #FAFAFA"
+    }
+  },
+  "elementStyling": {
+    "buttons": {
+      "primary": {
+        "comment": "Main action buttons (Download, Capture, Generate, etc.)",
+        "default": {
+          "background": "#FAFAFA",
+          "text": "#0A0A0A",
+          "border": "1px solid #FAFAFA",
+          "padding": "10px 18px",
+          "borderRadius": "6px",
+          "fontSize": "14px",
+          "fontWeight": 600,
+          "shadow": "0 2px 4px rgba(0, 0, 0, 0.1)"
+        },
+        "hover": {
+          "background": "#F4F4F5",
+          "text": "#0A0A0A",
+          "shadow": "0 4px 8px rgba(0, 0, 0, 0.15)"
+        },
+        "active": {
+          "background": "#E4E4E7",
+          "text": "#0A0A0A"
+        },
+        "disabled": {
+          "background": "#27272A",
+          "text": "#71717A",
+          "border": "1px solid #27272A",
+          "cursor": "not-allowed"
+        },
+        "focusVisible": {
+          "outline": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+        }
+      },
+      "secondary": {
+        "comment": "Secondary action buttons (Reset, Cancel, Choose Template, etc.)",
+        "default": {
+          "background": "transparent",
+          "text": "#E4E4E7",
+          "border": "1px solid #3F3F46",
+          "padding": "10px 18px",
+          "borderRadius": "6px",
+          "fontSize": "14px",
+          "fontWeight": 500
+        },
+        "hover": {
+          "background": "#18181B",
+          "text": "#FAFAFA",
+          "border": "1px solid #52525B"
+        },
+        "active": {
+          "background": "#27272A",
+          "text": "#FAFAFA"
+        },
+        "disabled": {
+          "background": "transparent",
+          "text": "#52525B",
+          "border": "1px solid #27272A",
+          "cursor": "not-allowed"
+        },
+        "focusVisible": {
+          "outline": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+        }
+      },
+      "ghost": {
+        "comment": "Icon-only or minimal buttons (Menu, Settings, Close, etc.)",
+        "default": {
+          "background": "transparent",
+          "iconFill": "#A1A1A6",
+          "padding": "8px",
+          "borderRadius": "6px",
+          "fontSize": "16px"
+        },
+        "hover": {
+          "background": "#18181B",
+          "iconFill": "#FAFAFA"
+        },
+        "active": {
+          "background": "#27272A",
+          "iconFill": "#FAFAFA"
+        },
+        "disabled": {
+          "background": "transparent",
+          "iconFill": "#52525B",
+          "cursor": "not-allowed"
+        }
+      }
+    },
+    "sliders": {
+      "comment": "shadcn/ui Slider for parameters (Polygon Sides, Iterations, Zoom, Color Stops, etc.)",
+      "track": {
+        "background": "#27272A",
+        "height": "4px",
+        "borderRadius": "2px"
+      },
+      "range": {
+        "comment": "The filled/active part of the track",
+        "background": "#FAFAFA",
+        "height": "4px"
+      },
+      "thumb": {
+        "background": "#FAFAFA",
+        "border": "2px solid #0A0A0A",
+        "width": "16px",
+        "height": "16px",
+        "borderRadius": "50%",
+        "shadow": "0 2px 4px rgba(0, 0, 0, 0.2)",
+        "focusRing": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+      }
+    },
+    "inputs": {
+      "comment": "shadcn/ui Text Input for values (search, custom text, hex colors, etc.)",
+      "default": {
+        "background": "#18181B",
+        "text": "#FAFAFA",
+        "border": "1px solid #27272A",
+        "placeholder": "#71717A",
+        "padding": "10px 12px",
+        "borderRadius": "6px",
+        "fontSize": "14px",
+        "shadow": "0 1px 2px rgba(0, 0, 0, 0.05)"
+      },
+      "focus": {
+        "border": "1px solid #52525B",
+        "background": "#18181B",
+        "text": "#FAFAFA",
+        "focusRing": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+      },
+      "hover": {
+        "border": "1px solid #3F3F46"
+      },
+      "disabled": {
+        "background": "#0F0F0F",
+        "text": "#52525B",
+        "border": "1px solid #27272A",
+        "cursor": "not-allowed"
+      }
+    },
+    "tabs": {
+      "comment": "Mode switchers (Template, Gradient, Fractal, etc.)",
+      "list": {
+        "background": "#0F0F0F",
+        "border": "1px solid #27272A",
+        "borderRadius": "8px",
+        "padding": "4px",
+        "display": "inline-flex",
+        "gap": "4px"
+      },
+      "trigger": {
+        "default": {
+          "background": "transparent",
+          "text": "#A1A1A6",
+          "padding": "8px 14px",
+          "borderRadius": "6px",
+          "fontSize": "13px",
+          "fontWeight": 500,
+          "border": "none"
+        },
+        "hover": {
+          "background": "#18181B",
+          "text": "#E4E4E7"
+        },
+        "active": {
+          "background": "#FAFAFA",
+          "text": "#0A0A0A",
+          "shadow": "0 2px 4px rgba(0, 0, 0, 0.1)"
+        },
+        "focusVisible": {
+          "outline": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+        }
+      }
+    },
+    "colorPicker": {
+      "comment": "For custom gradient/fractal colors - includes hue, saturation, brightness controls",
+      "swatch": {
+        "default": {
+          "border": "2px solid #3F3F46",
+          "borderRadius": "8px",
+          "width": "48px",
+          "height": "48px",
+          "shadow": "0 1px 2px rgba(0, 0, 0, 0.1)"
+        },
+        "hover": {
+          "border": "2px solid #52525B"
+        },
+        "active": {
+          "border": "2px solid #FAFAFA"
+        }
+      },
+      "inputs": {
+        "default": {
+          "background": "#18181B",
+          "text": "#FAFAFA",
+          "border": "1px solid #27272A",
+          "padding": "6px 10px",
+          "borderRadius": "4px",
+          "fontSize": "12px"
+        },
+        "focus": {
+          "border": "1px solid #52525B"
+        }
+      },
+      "sliders": {
+        "track": "#27272A",
+        "thumb": "#FAFAFA",
+        "label": "#A1A1A6"
+      }
+    },
+    "templateGallery": {
+      "comment": "The grid of pre-made backgrounds/templates",
+      "container": {
+        "display": "grid",
+        "gridTemplateColumns": "repeat(auto-fill, minmax(120px, 1fr))",
+        "gap": "12px",
+        "padding": "16px"
+      },
+      "item": {
+        "default": {
+          "border": "1px solid #27272A",
+          "borderRadius": "8px",
+          "background": "#0F0F0F",
+          "cursor": "pointer",
+          "aspectRatio": "1 / 1",
+          "overflow": "hidden"
+        },
+        "hover": {
+          "border": "1px solid #52525B",
+          "shadow": "0 4px 6px rgba(0, 0, 0, 0.1)"
+        },
+        "selected": {
+          "border": "2px solid #FAFAFA",
+          "shadow": "0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA"
+        }
+      },
+      "thumbnail": {
+        "width": "100%",
+        "height": "100%",
+        "objectFit": "cover"
+      }
+    },
+    "modals": {
+      "overlay": {
+        "background": "rgba(0, 0, 0, 0.6)",
+        "backdropFilter": "blur(2px)"
+      },
+      "content": {
+        "background": "#1A1A1A",
+        "border": "1px solid #27272A",
+        "borderRadius": "12px",
+        "padding": "24px",
+        "shadow": "0 20px 25px rgba(0, 0, 0, 0.3)",
+        "maxWidth": "90vw",
+        "minWidth": "300px"
+      },
+      "header": {
+        "color": "#FAFAFA",
+        "fontSize": "20px",
+        "fontWeight": 600,
+        "marginBottom": "16px"
+      },
+      "closeButton": {
+        "iconFill": "#A1A1A6",
+        "hover": "#FAFAFA"
+      }
+    },
+    "cards": {
+      "default": {
+        "background": "#161616",
+        "border": "1px solid #27272A",
+        "borderRadius": "8px",
+        "padding": "16px",
+        "shadow": "0 1px 2px rgba(0, 0, 0, 0.05)"
+      },
+      "hover": {
+        "border": "1px solid #3F3F46",
+        "shadow": "0 4px 6px rgba(0, 0, 0, 0.1)"
+      }
+    },
+    "scrollbar": {
+      "track": "#0A0A0A",
+      "thumb": "#3F3F46",
+      "thumbHover": "#52525B",
+      "width": "8px"
+    },
+    "formGroup": {
+      "label": "#FAFAFA",
+      "labelFontSize": "13px",
+      "labelFontWeight": 600,
+      "marginBottom": "8px",
+      "description": "#71717A",
+      "descriptionFontSize": "12px"
+    }
+  },
+  "interactions": {
+    "transitions": {
+      "fast": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "base": "200ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "slow": "300ms cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "animations": {
+      "fadeIn": {
+        "duration": "200ms",
+        "from": "opacity: 0",
+        "to": "opacity: 1"
+      },
+      "slideIn": {
+        "duration": "200ms",
+        "from": "transform: translateY(-4px); opacity: 0",
+        "to": "transform: translateY(0); opacity: 1"
+      }
+    }
+  },
+  "zIndex": {
+    "base": 0,
+    "dropdown": 1000,
+    "sticky": 1020,
+    "fixed": 1030,
+    "modalBackdrop": 1040,
+    "modal": 1050,
+    "popover": 1060,
+    "tooltip": 1070
+  },
+  "guardrails": {
+    "doNot": [
+      "Do not apply UI theme colors (e.g., button backgrounds like #FAFAFA or #18181B) to the *user-generated content* (the fractals, gradients, or screenshots). User content should display with full color freedom.",
+      "Do not apply shadows to text, labels, or flat icons. Shadows are ONLY for interactive containers (Buttons on hover/active, Modals, Cards, Sliders on interaction). Exception: ghost buttons and icon-only buttons should have no shadows in default state.",
+      "Do not confuse the `app` background (#0A0A0A) with the `sidebar` (#121212), `modal` (#1A1A1A), `previewArea` (#0F0F0F), or `card` (#161616) backgrounds. Each should be visually distinct.",
+      "Do not apply gradients to UI components like buttons, inputs, tabs, or cards. The theme is strictly solid black-and-white. Gradients are *exclusively* for user-generated content display areas.",
+      "Do not use arbitrary colors. All component colors must strictly adhere to the defined palette: backgrounds (#0A0A0A, #121212, #1A1A1A, #0F0F0F, #161616, #18181B), text (#FAFAFA, #E4E4E7, #A1A1A6, #71717A, #52525B), borders (#27272A, #3F3F46, #18181B).",
+      "Do not apply focus rings to components that are not interactive. Focus rings (0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA) are for buttons, inputs, tabs, sliders, and keyboard navigation.",
+      "Do not resize or rescale the `previewArea` preview content. It should scale naturally with container size while maintaining aspect ratio.",
+      "Do not use the secondary button style for primary actions. Primary actions (Download, Generate, Capture) should use the `primary` button style with white background."
+    ],
+    "doUse": [
+      "Use consistent spacing from the `spacing` scale: xs (4px), sm (8px), md (12px), lg (16px), xl (24px), 2xl (32px), 3xl (48px). Never use arbitrary pixel values.",
+      "Use the `borderRadius` scale for all rounded corners: small (4px), medium (6px), large (8px), xlarge (12px), pill (9999px).",
+      "Use `transitions.base` (200ms) for all interactive state changes. Use `fast` (150ms) for micro-interactions and `slow` (300ms) for significant layout changes.",
+      "Use the `focusRing` shadow (0 0 0 2px #0A0A0A, 0 0 0 4px #FAFAFA) for all keyboard-focused interactive elements to ensure accessibility.",
+      "Use appropriate button styles: `primary` for main actions, `secondary` for alternatives, `ghost` for iconography or minimal interactions.",
+      "Use the label color (#A1A1A6) for all parameter names, form labels, and UI labels. Use caption color (#71717A) for helper text or descriptions.",
+      "Use the body text color (#E4E4E7) for content and descriptions. Use heading colors (#FAFAFA) only for section titles and headings."
+    ]
+  },
+  "colorPalette": {
+    "neutrals": {
+      "black": "#0A0A0A",
+      "darkGray1": "#121212",
+      "darkGray2": "#161616",
+      "darkGray3": "#18181B",
+      "darkGray4": "#1A1A1A",
+      "darkGray5": "#27272A",
+      "darkGray6": "#3F3F46",
+      "darkGray7": "#52525B",
+      "darkGray8": "#71717A",
+      "darkGray9": "#A1A1A6",
+      "lightGray1": "#E4E4E7",
+      "lightGray2": "#F4F4F5",
+      "white": "#FAFAFA"
+    },
+    "semanticMeaning": {
+      "primary": "#FAFAFA",
+      "secondary": "#E4E4E7",
+      "muted": "#A1A1A6",
+      "mutedForeground": "#71717A",
+      "border": "#27272A",
+      "input": "#18181B",
+      "ring": "#FAFAFA"
+    }
+  },
+  "usage": {
+    "exportMethod": "JSON format for AI/LLM style guides. Reference this document when generating, replicating, or auditing PolyGen UI.",
+    "framework": "Next.js with shadcn/ui components, Tailwind CSS v4",
+    "fontStack": "Inter for all typography (headings and body)"
+  }
+}
