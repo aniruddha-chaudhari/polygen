@@ -2,14 +2,18 @@
 
 import { useState } from "react"
 import { GradientColorStops } from "./gradient-color-stops"
+import { ColorPicker } from "./retroui/ColorPicker"
+import { Switch } from "./ui/switch"
 import type { GradientState } from "@/app/page"
 
 interface GradientControlsProps {
   gradient: GradientState
   setGradient: (gradient: GradientState) => void
+  showCenterHandle: boolean
+  setShowCenterHandle: (show: boolean) => void
 }
 
-export function GradientControls({ gradient, setGradient }: GradientControlsProps) {
+export function GradientControls({ gradient, setGradient, showCenterHandle, setShowCenterHandle }: GradientControlsProps) {
   const [selectedTab, setSelectedTab] = useState<"basic" | "advanced">("basic")
 
   const handleTypeChange = (type: GradientState["type"]) => {
@@ -24,7 +28,7 @@ export function GradientControls({ gradient, setGradient }: GradientControlsProp
           Gradient Type
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {["linear", "radial", "conic", "mesh"].map((type) => (
+          {["linear", "radial", "conic", "mesh", "repeating-linear", "repeating-radial", "repeating-conic"].map((type) => (
             <button
               key={type}
               onClick={() => handleTypeChange(type as GradientState["type"])}
@@ -60,10 +64,59 @@ export function GradientControls({ gradient, setGradient }: GradientControlsProp
       {/* Basic Controls */}
       {selectedTab === "basic" && (
         <div className="space-y-4">
-          <GradientColorStops
-            colorStops={gradient.colorStops}
-            setColorStops={(stops) => setGradient({ ...gradient, colorStops: stops })}
-          />
+          {gradient.type === "mesh" ? (
+            /* Mesh Grid Controls */
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Mesh Grid Colors (3x3)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {gradient.meshGrid.map((row, rowIndex) =>
+                    row.map((color, colIndex) => (
+                      <div key={`${rowIndex}-${colIndex}`} className="flex flex-col items-center gap-1">
+                        <ColorPicker
+                          value={color}
+                          onChange={(newColor) => {
+                            const newMeshGrid = gradient.meshGrid.map((r, ri) =>
+                              r.map((c, ci) =>
+                                ri === rowIndex && ci === colIndex ? newColor : c
+                              )
+                            )
+                            setGradient({ ...gradient, meshGrid: newMeshGrid })
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {rowIndex},{colIndex}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Mesh Spread Control */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Spread</label>
+                  <span className="text-xs font-mono text-primary">{gradient.meshSpread}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={gradient.meshSpread}
+                  onChange={(e) => setGradient({ ...gradient, meshSpread: Number(e.target.value) })}
+                  className="w-full h-2 bg-muted rounded accent-primary"
+                />
+              </div>
+            </div>
+          ) : (
+            <GradientColorStops
+              colorStops={gradient.colorStops}
+              setColorStops={(stops) => setGradient({ ...gradient, colorStops: stops })}
+            />
+          )}
 
           {/* Angle for Linear */}
           {(gradient.type === "linear" || gradient.type === "repeating-linear") && (
@@ -124,22 +177,36 @@ export function GradientControls({ gradient, setGradient }: GradientControlsProp
               </div>
 
               {gradient.type === "conic" && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Start Angle
-                    </label>
-                    <span className="text-xs font-mono text-primary">{gradient.angle}°</span>
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Start Angle
+                      </label>
+                      <span className="text-xs font-mono text-primary">{gradient.angle}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={gradient.angle}
+                      onChange={(e) => setGradient({ ...gradient, angle: Number(e.target.value) })}
+                      className="w-full h-2 bg-muted rounded accent-primary"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={gradient.angle}
-                    onChange={(e) => setGradient({ ...gradient, angle: Number(e.target.value) })}
-                    className="w-full h-2 bg-muted rounded accent-primary"
-                  />
-                </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Smooth Transition
+                      </label>
+                      <Switch
+                        checked={gradient.conicSmoothTransition}
+                        onCheckedChange={(checked) => setGradient({ ...gradient, conicSmoothTransition: checked })}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}
@@ -168,23 +235,41 @@ export function GradientControls({ gradient, setGradient }: GradientControlsProp
               </div>
             </div>
           )}
+
+          {/* Repeat Size for Repeating Gradients */}
+          {gradient.type.startsWith("repeating-") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Repeat Size</label>
+                <span className="text-xs font-mono text-primary">{gradient.repeatSize}px</span>
+              </div>
+              <input
+                type="range"
+                min="50"
+                max="500"
+                value={gradient.repeatSize}
+                onChange={(e) => setGradient({ ...gradient, repeatSize: Number(e.target.value) })}
+                className="w-full h-2 bg-muted rounded accent-primary"
+              />
+            </div>
+          )}
         </div>
       )}
 
       {/* Advanced Controls */}
       {selectedTab === "advanced" && (
-        <div className="space-y-4 p-3 bg-muted rounded border border-foreground/10">
+        <div className="space-y-4 p-3 bg-white rounded border border-foreground/10">
           {/* Noise Controls */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">
-              <input
-                type="checkbox"
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Add Grain
+              </label>
+              <Switch
                 checked={gradient.noiseEnabled}
-                onChange={(e) => setGradient({ ...gradient, noiseEnabled: e.target.checked })}
-                className="w-4 h-4 cursor-pointer"
+                onCheckedChange={(checked) => setGradient({ ...gradient, noiseEnabled: checked })}
               />
-              Add Grain
-            </label>
+            </div>
           </div>
 
           {gradient.noiseEnabled && (
@@ -226,6 +311,24 @@ export function GradientControls({ gradient, setGradient }: GradientControlsProp
                 </div>
               </div>
             </>
+          )}
+
+          {/* Center Handle Visibility */}
+          {(gradient.type === "radial" ||
+            gradient.type === "conic" ||
+            gradient.type === "repeating-radial" ||
+            gradient.type === "repeating-conic") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Show Center Handle
+                </label>
+                <Switch
+                  checked={showCenterHandle}
+                  onCheckedChange={setShowCenterHandle}
+                />
+              </div>
+            </div>
           )}
         </div>
       )}

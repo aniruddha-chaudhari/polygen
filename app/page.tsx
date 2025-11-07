@@ -28,6 +28,7 @@ export interface GradientState {
   noiseEnabled: boolean
   noiseAmount: number
   noiseType: "smooth" | "harsh"
+  conicSmoothTransition: boolean
 }
 
 const defaultGradientState: GradientState = {
@@ -51,6 +52,7 @@ const defaultGradientState: GradientState = {
   noiseEnabled: false,
   noiseAmount: 0,
   noiseType: "smooth",
+  conicSmoothTransition: true,
 }
 
 export default function Home() {
@@ -68,6 +70,7 @@ export default function Home() {
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+  const [showCenterHandle, setShowCenterHandle] = useState(true)
 
   const handleThemeChange = (newTheme: "dark" | "light") => {
     setTheme(newTheme)
@@ -124,6 +127,8 @@ export default function Home() {
             mode={mode}
             selectedTemplate={selectedTemplate}
             gradient={gradient}
+            setGradient={setGradient}
+            showCenterHandle={showCenterHandle}
             fractalParams={fractalParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
@@ -147,11 +152,12 @@ export default function Home() {
           >
             <RightSidebar
               mode={mode}
-              setMode={setMode}
               selectedTemplate={selectedTemplate}
               setSelectedTemplate={setSelectedTemplate}
               gradient={gradient}
               setGradient={setGradient}
+              showCenterHandle={showCenterHandle}
+              setShowCenterHandle={setShowCenterHandle}
               fractalParams={fractalParams}
               setFractalParams={setFractalParams}
               canvasBackgrounds={canvasBackgrounds}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ColorPicker } from "./retroui/ColorPicker"
 import { Input } from "./retroui/Input"
 import { Button } from "./retroui/Button"
@@ -23,6 +23,11 @@ export function GradientColorStops({ colorStops, setColorStops }: GradientColorS
       .join(", ")
     setPreviewGradient(gradient)
   }, [])
+
+  // Update preview when colorStops prop changes
+  useEffect(() => {
+    updatePreview(colorStops)
+  }, [colorStops, updatePreview])
 
   const handleColorChange = (index: number, newColor: string) => {
     const newStops = [...colorStops]
@@ -81,7 +86,7 @@ export function GradientColorStops({ colorStops, setColorStops }: GradientColorS
       {/* Color Stops List */}
       <div className="space-y-3">
         {colorStops.map((stop, index) => (
-          <div key={index} className="space-y-2 p-3 bg-muted rounded border border-foreground/10">
+          <div key={index} className="space-y-2 p-3 bg-white rounded border border-foreground/10">
             {/* Color and Alpha */}
             <div className="flex gap-2 items-center">
               <ColorPicker value={stop.color} onChange={(color) => handleColorChange(index, color)} />

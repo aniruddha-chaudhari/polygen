@@ -25,24 +25,58 @@ export function Canvas({ mode, selectedTemplate, gradient, fractalParams }: Canv
   const renderGradient = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       let canvasGradient: CanvasGradient | null = null
+      const isRepeating = gradient.type.startsWith('repeating-')
+      const baseType = isRepeating ? gradient.type.replace('repeating-', '') as 'linear' | 'radial' | 'conic' : gradient.type
 
       const centerX = (gradient.centerX / 100) * width
       const centerY = (gradient.centerY / 100) * height
       const maxRadius = Math.sqrt(width * width + height * height) / 2
 
-      if (gradient.type === "linear" || gradient.type === "repeating-linear") {
+      if (baseType === "linear") {
         const angleRad = (gradient.angle * Math.PI) / 180
         const startX = width / 2 - Math.cos(angleRad) * maxRadius
         const startY = height / 2 - Math.sin(angleRad) * maxRadius
         const endX = width / 2 + Math.cos(angleRad) * maxRadius
         const endY = height / 2 + Math.sin(angleRad) * maxRadius
         canvasGradient = ctx.createLinearGradient(startX, startY, endX, endY)
-      } else if (gradient.type === "radial" || gradient.type === "repeating-radial") {
+      } else if (baseType === "radial") {
         const radius0 = 0
-        const radius1 = maxRadius
+        // Apply shape ratio for elliptical gradients
+        const radius1 = gradient.shape === "ellipse"
+          ? maxRadius * gradient.shapeRatio
+          : maxRadius
         canvasGradient = ctx.createRadialGradient(centerX, centerY, radius0, centerX, centerY, radius1)
-      } else if (gradient.type === "conic" || gradient.type === "repeating-conic") {
+      } else if (baseType === "conic") {
         canvasGradient = ctx.createConicGradient((gradient.angle * Math.PI) / 180, centerX, centerY)
+      } else if (gradient.type === "mesh") {
+        // Mesh gradient: render 9 overlapping radial gradients for organic blending
+        const savedGlobalCompositeOperation = ctx.globalCompositeOperation
+        ctx.globalCompositeOperation = 'screen' // Additive blending for smooth color mixing
+
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const x = (col / 2) * width // Positions: 0, 0.5, 1.0
+            const y = (row / 2) * height // Positions: 0, 0.5, 1.0
+            const radius = (gradient.meshSpread / 100) * Math.min(width, height) * 0.8
+
+            const meshGradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
+            const color = gradient.meshGrid[row][col]
+            meshGradient.addColorStop(0, hexToRgba(color, 1))
+            meshGradient.addColorStop(1, hexToRgba(color, 0))
+
+            ctx.fillStyle = meshGradient
+            ctx.fillRect(0, 0, width, height)
+          }
+        }
+
+        // Restore original composite operation
+        ctx.globalCompositeOperation = savedGlobalCompositeOperation
+
+        // Apply noise if enabled (for mesh gradients too)
+        if (gradient.noiseEnabled && gradient.noiseAmount > 0) {
+          applyNoise(ctx, width, height, gradient.noiseAmount, gradient.noiseType)
+        }
+        return // Early return since mesh doesn't use the standard color stops logic
       }
 
       if (canvasGradient) {
@@ -53,8 +87,34 @@ export function Canvas({ mode, selectedTemplate, gradient, fractalParams }: Canv
           canvasGradient!.addColorStop(stop.position / 100, rgba)
         })
 
-        ctx.fillStyle = canvasGradient
-        ctx.fillRect(0, 0, width, height)
+        // Add smooth transition for conic gradients
+        if (baseType === "conic" && gradient.conicSmoothTransition && sortedStops.length > 0) {
+          const firstStop = sortedStops[0]
+          const rgba = hexToRgba(firstStop.color, firstStop.alpha)
+          canvasGradient!.addColorStop(1.0, rgba) // Add first color at 100% to eliminate sharp line
+        }
+
+        if (isRepeating) {
+          // Create pattern canvas for repeating gradients
+          const patternCanvas = document.createElement('canvas')
+          const patternSize = Math.max(50, gradient.repeatSize) // Minimum 50px, configurable
+          patternCanvas.width = patternSize
+          patternCanvas.height = patternSize
+          const patternCtx = patternCanvas.getContext('2d')!
+
+          // Render the gradient on the pattern canvas
+          patternCtx.fillStyle = canvasGradient
+          patternCtx.fillRect(0, 0, patternSize, patternSize)
+
+          // Create and apply the pattern
+          const pattern = ctx.createPattern(patternCanvas, 'repeat')!
+          ctx.fillStyle = pattern
+          ctx.fillRect(0, 0, width, height)
+        } else {
+          // Regular gradient rendering
+          ctx.fillStyle = canvasGradient
+          ctx.fillRect(0, 0, width, height)
+        }
 
         // Apply noise if enabled
         if (gradient.noiseEnabled && gradient.noiseAmount > 0) {
