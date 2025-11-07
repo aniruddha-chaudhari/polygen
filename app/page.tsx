@@ -274,7 +274,7 @@ export default function Home() {
       <div className="flex h-screen bg-background text-foreground">
         {/* Top Header - Retro style */}
         <div className="fixed top-0 left-0 right-0 h-20 border-b-4 border-foreground/20 bg-background/95 backdrop-blur flex items-center justify-between px-6 z-50">
-          <img src="/logo.svg" alt="POLYGEN" className="h-40 w-auto" />
+          <img src="/logoblack.svg" alt="POLYGEN" className="h-40 w-auto" />
           <ThemeSwitcher theme={theme} setTheme={handleThemeChange} />
         </div>
 
@@ -343,11 +343,8 @@ export default function Home() {
             mandelbrotAutoZoomActive={mandelbrotAutoZoomActive}
             setMandelbrotAutoZoomActive={setMandelbrotAutoZoomActive}
             tessellationParams={tessellationParams}
-            setTessellationParams={setTessellationParams}
             circlePackingParams={circlePackingParams}
-            setCirclePackingParams={setCirclePackingParams}
             opArtParams={opArtParams}
-            setOpArtParams={setOpArtParams}
           />
 
           {/* Toggle Right Sidebar Button */}

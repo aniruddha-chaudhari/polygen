@@ -52,7 +52,6 @@ export function Canvas({
   strangeAttractorParams,
   cellularAutomataParams,
   flowFieldParams,
-  voronoiParams,
   tessellationParams,
   circlePackingParams,
   opArtParams,
@@ -731,7 +730,7 @@ async function drawFlowFieldAsync(
   // Check if Workers are supported
   if (typeof Worker === "undefined") {
     console.warn("Web Workers not supported, falling back to single-threaded flow field")
-    drawFlowFieldSingleThreaded(ctx, width, height, params)
+    drawFlowField(ctx, width, height, params)
     return
   }
 
@@ -792,8 +791,106 @@ async function drawFlowFieldAsync(
     ctx.globalAlpha = 1
   } catch (error) {
     console.warn("Worker rendering failed, falling back to single-threaded:", error)
-    drawFlowFieldSingleThreaded(ctx, width, height, params)
+    drawFlowField(ctx, width, height, params)
   }
+}
+
+function drawFlowField(ctx: CanvasRenderingContext2D, width: number, height: number, params: FlowFieldParams) {
+  // Clear canvas
+  ctx.fillStyle = "#0a0a0a"
+  ctx.fillRect(0, 0, width, height)
+
+  // Generate flow field using Perlin noise
+  const flowField = new Array(height)
+  for (let y = 0; y < height; y++) {
+    flowField[y] = new Array(width)
+    for (let x = 0; x < width; x++) {
+      // Sample Perlin noise at different octaves for more interesting flow
+      const angle1 = perlinNoise.noise(x * params.noiseScale, y * params.noiseScale) * Math.PI * 4
+      const angle2 = perlinNoise.noise(x * params.noiseScale * 2, y * params.noiseScale * 2) * Math.PI * 2
+      const angle3 = perlinNoise.noise(x * params.noiseScale * 4, y * params.noiseScale * 4) * Math.PI
+
+      // Combine angles for more complex flow
+      const angle = (angle1 + angle2 * 0.5 + angle3 * 0.25) / 1.75
+
+      flowField[y][x] = angle
+    }
+  }
+
+  // Set drawing properties
+  ctx.strokeStyle = "#ffffff"
+  ctx.lineWidth = params.lineWeight
+  ctx.globalAlpha = params.opacity
+  ctx.lineCap = "round"
+  ctx.lineJoin = "round"
+
+  // Trace and draw particle paths
+  for (let i = 0; i < params.particleCount; i++) {
+    let x, y
+
+    // Start particles at random positions
+    x = Math.random() * width
+    y = Math.random() * height
+
+    // Also add some particles starting from edges for better coverage
+    if (i < params.particleCount * 0.1) {
+      // Left edge
+      x = 0
+      y = Math.random() * height
+    } else if (i < params.particleCount * 0.2) {
+      // Right edge
+      x = width - 1
+      y = Math.random() * height
+    } else if (i < params.particleCount * 0.3) {
+      // Top edge
+      x = Math.random() * width
+      y = 0
+    } else if (i < params.particleCount * 0.4) {
+      // Bottom edge
+      x = Math.random() * width
+      y = height - 1
+    }
+
+    // Begin path
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+
+    // Trace path
+    const maxSteps = params.stepLength
+    let hasDrawn = false
+
+    for (let step = 0; step < maxSteps; step++) {
+      // Get flow direction at current position
+      const gridX = Math.floor(x)
+      const gridY = Math.floor(y)
+
+      if (gridX < 0 || gridX >= width || gridY < 0 || gridY >= height) {
+        break // Out of bounds
+      }
+
+      const angle = flowField[gridY][gridX]
+
+      // Move in direction of flow
+      const stepSize = 1
+      x += Math.cos(angle) * stepSize
+      y += Math.sin(angle) * stepSize
+
+      ctx.lineTo(x, y)
+      hasDrawn = true
+
+      // Stop if we go out of bounds
+      if (x < 0 || x >= width || y < 0 || y >= height) {
+        break
+      }
+    }
+
+    // Only stroke if we drew something
+    if (hasDrawn) {
+      ctx.stroke()
+    }
+  }
+
+  ctx.globalAlpha = 1
 }
 
 async function drawVoronoiAsync(

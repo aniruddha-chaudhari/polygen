@@ -18,9 +18,9 @@ const space = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'PolyGen - Generative Art Studio',
+  description: 'Create stunning generative art with algorithms like Perlin Noise, Strange Attractors, Cellular Automata, and more.',
+  generator: 'PolyGen',
 }
 
 export default function RootLayout({

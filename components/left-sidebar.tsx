@@ -138,7 +138,7 @@ export function LeftSidebar({
   ]
 
   return (
-    <div className="h-full bg-card flex flex-col">
+    <div className="h-full bg-card flex flex-col overflow-y-auto">
       <div className="p-4">
         <div className="grid grid-cols-2 gap-3">
           {tabs.map((tab) => {
