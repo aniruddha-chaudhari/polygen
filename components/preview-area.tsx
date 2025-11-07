@@ -2,15 +2,27 @@
 
 import { Canvas } from "./canvas"
 import { GradientCenterHandle } from "./gradient-center-handle"
-import type { GradientState } from "@/app/page"
+import type {
+  GradientState,
+  ChaosGameParams,
+  MandelbrotParams,
+  NewtonParams,
+  FlameParams,
+  LSystemParams,
+  Mode,
+} from "@/app/page"
 
 interface PreviewAreaProps {
-  mode: "template" | "gradient" | "fractal"
+  mode: Mode
   selectedTemplate: number
   gradient: GradientState
   setGradient: (gradient: GradientState) => void
   showCenterHandle: boolean
-  fractalParams: any
+  chaosGameParams: ChaosGameParams
+  mandelbrotParams: MandelbrotParams
+  newtonParams: NewtonParams
+  flameParams: FlameParams
+  lsystemParams: LSystemParams
   canvasBackgrounds: string[]
   selectedBgIndex: number | null
 }
@@ -21,7 +33,11 @@ export function PreviewArea({
   gradient,
   setGradient,
   showCenterHandle,
-  fractalParams,
+  chaosGameParams,
+  mandelbrotParams,
+  newtonParams,
+  flameParams,
+  lsystemParams,
   canvasBackgrounds,
   selectedBgIndex,
 }: PreviewAreaProps) {
@@ -35,12 +51,18 @@ export function PreviewArea({
         className="relative w-full max-w-2xl aspect-video rounded-lg border border-border overflow-hidden"
         style={{ backgroundColor: bgColor }}
       >
-        <Canvas mode={mode} selectedTemplate={selectedTemplate} gradient={gradient} fractalParams={fractalParams} />
-        {showCenterHandle && (
-          <GradientCenterHandle
-            gradient={gradient}
-            setGradient={setGradient}
-          />
+        <Canvas
+          mode={mode}
+          selectedTemplate={selectedTemplate}
+          gradient={gradient}
+          chaosGameParams={chaosGameParams}
+          mandelbrotParams={mandelbrotParams}
+          newtonParams={newtonParams}
+          flameParams={flameParams}
+          lsystemParams={lsystemParams}
+        />
+        {showCenterHandle && mode === "gradient" && (
+          <GradientCenterHandle gradient={gradient} setGradient={setGradient} />
         )}
       </div>
     </div>

@@ -31,6 +31,47 @@ export interface GradientState {
   conicSmoothTransition: boolean
 }
 
+export interface ChaosGameParams {
+  sides: number
+  jumpRatio: number
+  pointDensity: number
+  pointColor: string
+  bgColor: string
+}
+
+export interface MandelbrotParams {
+  zoom: number
+  panX: number
+  panY: number
+  iterations: number
+  colorPalette: ColorStop[]
+  juliaSeedX: number
+  juliaSeedY: number
+  isJuliaSet: boolean
+}
+
+export interface NewtonParams {
+  roots: number
+  iterations: number
+  rootColors: string[]
+}
+
+export interface FlameParams {
+  functionSet: string
+  palette: ColorStop[]
+  gamma: number
+}
+
+export interface LSystemParams {
+  preset: string
+  iteration: number
+  angle: number
+  lineWeight: number
+  lineColor: string
+}
+
+export type Mode = "template" | "gradient" | "chaos-game" | "mandelbrot" | "newton" | "flame" | "lsystem"
+
 const defaultGradientState: GradientState = {
   type: "linear",
   colorStops: [
@@ -56,17 +97,59 @@ const defaultGradientState: GradientState = {
 }
 
 export default function Home() {
-  const [mode, setMode] = useState<"template" | "gradient" | "fractal">("gradient")
+  const [mode, setMode] = useState<Mode>("gradient")
   const [selectedTemplate, setSelectedTemplate] = useState(0)
   const [gradient, setGradient] = useState<GradientState>(defaultGradientState)
   const [canvasBackgrounds, setCanvasBackgrounds] = useState<string[]>([])
   const [selectedBgIndex, setSelectedBgIndex] = useState<number | null>(null)
-  const [fractalParams, setFractalParams] = useState({
+
+  const [chaosGameParams, setChaosGameParams] = useState<ChaosGameParams>({
     sides: 6,
-    iterations: 5,
-    scale: 1,
-    rotation: 0,
+    jumpRatio: 0.5,
+    pointDensity: 10000,
+    pointColor: "#a78bfa",
+    bgColor: "#0a0a0a",
   })
+
+  const [mandelbrotParams, setMandelbrotParams] = useState<MandelbrotParams>({
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+    iterations: 100,
+    colorPalette: [
+      { color: "#000000", position: 0, alpha: 1 },
+      { color: "#ff6b00", position: 50, alpha: 1 },
+      { color: "#ffff00", position: 100, alpha: 1 },
+    ],
+    juliaSeedX: -0.5,
+    juliaSeedY: 0,
+    isJuliaSet: false,
+  })
+
+  const [newtonParams, setNewtonParams] = useState<NewtonParams>({
+    roots: 3,
+    iterations: 50,
+    rootColors: ["#ff1744", "#00e676", "#2979f3"],
+  })
+
+  const [flameParams, setFlameParams] = useState<FlameParams>({
+    functionSet: "Sinusoidal",
+    palette: [
+      { color: "#000000", position: 0, alpha: 1 },
+      { color: "#ff6b00", position: 50, alpha: 1 },
+      { color: "#ffff00", position: 100, alpha: 1 },
+    ],
+    gamma: 1.5,
+  })
+
+  const [lsystemParams, setLSystemParams] = useState<LSystemParams>({
+    preset: "Fern",
+    iteration: 5,
+    angle: 25,
+    lineWeight: 2,
+    lineColor: "#90ee90",
+  })
+
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
@@ -107,8 +190,16 @@ export default function Home() {
               setSelectedTemplate={setSelectedTemplate}
               gradient={gradient}
               setGradient={setGradient}
-              fractalParams={fractalParams}
-              setFractalParams={setFractalParams}
+              chaosGameParams={chaosGameParams}
+              setChaosGameParams={setChaosGameParams}
+              mandelbrotParams={mandelbrotParams}
+              setMandelbrotParams={setMandelbrotParams}
+              newtonParams={newtonParams}
+              setNewtonParams={setNewtonParams}
+              flameParams={flameParams}
+              setFlameParams={setFlameParams}
+              lsystemParams={lsystemParams}
+              setLSystemParams={setLSystemParams}
             />
           </div>
 
@@ -129,7 +220,11 @@ export default function Home() {
             gradient={gradient}
             setGradient={setGradient}
             showCenterHandle={showCenterHandle}
-            fractalParams={fractalParams}
+            chaosGameParams={chaosGameParams}
+            mandelbrotParams={mandelbrotParams}
+            newtonParams={newtonParams}
+            flameParams={flameParams}
+            lsystemParams={lsystemParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
           />
@@ -158,8 +253,16 @@ export default function Home() {
               setGradient={setGradient}
               showCenterHandle={showCenterHandle}
               setShowCenterHandle={setShowCenterHandle}
-              fractalParams={fractalParams}
-              setFractalParams={setFractalParams}
+              chaosGameParams={chaosGameParams}
+              setChaosGameParams={setChaosGameParams}
+              mandelbrotParams={mandelbrotParams}
+              setMandelbrotParams={setMandelbrotParams}
+              newtonParams={newtonParams}
+              setNewtonParams={setNewtonParams}
+              flameParams={flameParams}
+              setFlameParams={setFlameParams}
+              lsystemParams={lsystemParams}
+              setLSystemParams={setLSystemParams}
               canvasBackgrounds={canvasBackgrounds}
               setCanvasBackgrounds={setCanvasBackgrounds}
               selectedBgIndex={selectedBgIndex}

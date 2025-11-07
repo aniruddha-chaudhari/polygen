@@ -1,16 +1,25 @@
 "use client"
 
-import { FileText, PaintBucket, Zap } from "lucide-react"
+import { FileText, PaintBucket, Sparkles, Maximize, GitBranch, Flame, Sprout } from "lucide-react"
+import type { Mode, ChaosGameParams, MandelbrotParams, NewtonParams, FlameParams, LSystemParams } from "@/app/page"
 
 interface LeftSidebarProps {
-  mode: "template" | "gradient" | "fractal"
-  setMode: (mode: "template" | "gradient" | "fractal") => void
+  mode: Mode
+  setMode: (mode: Mode) => void
   selectedTemplate: number
   setSelectedTemplate: (id: number) => void
   gradient: any
   setGradient: (gradient: any) => void
-  fractalParams: any
-  setFractalParams: (params: any) => void
+  chaosGameParams: ChaosGameParams
+  setChaosGameParams: (params: ChaosGameParams) => void
+  mandelbrotParams: MandelbrotParams
+  setMandelbrotParams: (params: MandelbrotParams) => void
+  newtonParams: NewtonParams
+  setNewtonParams: (params: NewtonParams) => void
+  flameParams: FlameParams
+  setFlameParams: (params: FlameParams) => void
+  lsystemParams: LSystemParams
+  setLSystemParams: (params: LSystemParams) => void
 }
 
 export function LeftSidebar({
@@ -20,8 +29,16 @@ export function LeftSidebar({
   setSelectedTemplate,
   gradient,
   setGradient,
-  fractalParams,
-  setFractalParams,
+  chaosGameParams,
+  setChaosGameParams,
+  mandelbrotParams,
+  setMandelbrotParams,
+  newtonParams,
+  setNewtonParams,
+  flameParams,
+  setFlameParams,
+  lsystemParams,
+  setLSystemParams,
 }: LeftSidebarProps) {
   const tabs = [
     {
@@ -35,9 +52,29 @@ export function LeftSidebar({
       icon: PaintBucket,
     },
     {
-      id: "fractal" as const,
-      label: "Fractals",
-      icon: Zap,
+      id: "chaos-game" as const,
+      label: "Chaos Garden",
+      icon: Sparkles,
+    },
+    {
+      id: "mandelbrot" as const,
+      label: "Infinite Zoom",
+      icon: Maximize,
+    },
+    {
+      id: "newton" as const,
+      label: "Root Finder",
+      icon: GitBranch,
+    },
+    {
+      id: "flame" as const,
+      label: "Cosmic Flame",
+      icon: Flame,
+    },
+    {
+      id: "lsystem" as const,
+      label: "Organic Growth",
+      icon: Sprout,
     },
   ]
 
@@ -58,7 +95,7 @@ export function LeftSidebar({
                 }`}
               >
                 <IconComponent className="w-6 h-6" />
-                <span className="text-xs font-medium">{tab.label}</span>
+                <span className="text-xs font-medium text-center leading-tight">{tab.label}</span>
               </button>
             )
           })}

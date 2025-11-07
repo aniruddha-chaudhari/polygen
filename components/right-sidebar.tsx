@@ -2,19 +2,32 @@
 
 import { TemplateGallery } from "./template-gallery"
 import { GradientControls } from "./gradient-controls"
-import { FractalControls } from "./fractal-controls"
+import { ChaosGameControls } from "./chaos-game-controls"
+import { MandelbrotControls } from "./mandelbrot-controls"
+import { NewtonControls } from "./newton-controls"
+import { FlameControls } from "./flame-controls"
+import { LSystemControls } from "./lsystem-controls"
 import { CanvasBackgroundManager } from "./canvas-background-manager"
+import type { Mode, ChaosGameParams, MandelbrotParams, NewtonParams, FlameParams, LSystemParams } from "@/app/page"
 
 interface RightSidebarProps {
-  mode: "template" | "gradient" | "fractal"
+  mode: Mode
   selectedTemplate: number
   setSelectedTemplate: (id: number) => void
   gradient: any
   setGradient: (gradient: any) => void
   showCenterHandle: boolean
   setShowCenterHandle: (show: boolean) => void
-  fractalParams: any
-  setFractalParams: (params: any) => void
+  chaosGameParams: ChaosGameParams
+  setChaosGameParams: (params: ChaosGameParams) => void
+  mandelbrotParams: MandelbrotParams
+  setMandelbrotParams: (params: MandelbrotParams) => void
+  newtonParams: NewtonParams
+  setNewtonParams: (params: NewtonParams) => void
+  flameParams: FlameParams
+  setFlameParams: (params: FlameParams) => void
+  lsystemParams: LSystemParams
+  setLSystemParams: (params: LSystemParams) => void
   canvasBackgrounds: string[]
   setCanvasBackgrounds: (bg: string[]) => void
   selectedBgIndex: number | null
@@ -29,8 +42,16 @@ export function RightSidebar({
   setGradient,
   showCenterHandle,
   setShowCenterHandle,
-  fractalParams,
-  setFractalParams,
+  chaosGameParams,
+  setChaosGameParams,
+  mandelbrotParams,
+  setMandelbrotParams,
+  newtonParams,
+  setNewtonParams,
+  flameParams,
+  setFlameParams,
+  lsystemParams,
+  setLSystemParams,
   canvasBackgrounds,
   setCanvasBackgrounds,
   selectedBgIndex,
@@ -63,12 +84,43 @@ export function RightSidebar({
             </div>
           )}
 
-          {mode === "fractal" && (
+          {mode === "chaos-game" && (
             <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">
-                Fractal Settings
-              </h3>
-              <FractalControls params={fractalParams} setParams={setFractalParams} />
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Chaos Garden</h3>
+              <p className="text-xs text-muted-foreground mb-3">Iterative function system with random vertex jumping</p>
+              <ChaosGameControls params={chaosGameParams} setParams={setChaosGameParams} />
+            </div>
+          )}
+
+          {mode === "mandelbrot" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Infinite Zoom</h3>
+              <p className="text-xs text-muted-foreground mb-3">Mandelbrot & Julia sets with interactive exploration</p>
+              <MandelbrotControls params={mandelbrotParams} setParams={setMandelbrotParams} />
+            </div>
+          )}
+
+          {mode === "newton" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Root Finder</h3>
+              <p className="text-xs text-muted-foreground mb-3">Newton's method fractal with polynomial roots</p>
+              <NewtonControls params={newtonParams} setParams={setNewtonParams} />
+            </div>
+          )}
+
+          {mode === "flame" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Cosmic Flame</h3>
+              <p className="text-xs text-muted-foreground mb-3">Fractal flame with iterated function systems</p>
+              <FlameControls params={flameParams} setParams={setFlameParams} />
+            </div>
+          )}
+
+          {mode === "lsystem" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Organic Growth</h3>
+              <p className="text-xs text-muted-foreground mb-3">L-systems for natural branching patterns</p>
+              <LSystemControls params={lsystemParams} setParams={setLSystemParams} />
             </div>
           )}
 
