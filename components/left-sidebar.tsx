@@ -9,7 +9,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface LeftSidebarProps {
@@ -31,8 +30,6 @@ interface LeftSidebarProps {
   setCellularAutomataParams: (params: CellularAutomataParams) => void
   flowFieldParams: FlowFieldParams
   setFlowFieldParams: (params: FlowFieldParams) => void
-  reactionDiffusionParams: ReactionDiffusionParams
-  setReactionDiffusionParams: (params: ReactionDiffusionParams) => void
 }
 
 export function LeftSidebar({
@@ -54,8 +51,6 @@ export function LeftSidebar({
   setCellularAutomataParams,
   flowFieldParams,
   setFlowFieldParams,
-  reactionDiffusionParams,
-  setReactionDiffusionParams,
 }: LeftSidebarProps) {
   const tabs = [
     {

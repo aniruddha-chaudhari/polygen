@@ -78,12 +78,12 @@ export function PreviewArea({
       // Convert pixel movement to complex plane movement
       // Scale based on current zoom level
       const scale = 4 / mandelbrotParams.zoom // Base range is [-2, 2] at zoom 1
-      const panScale = scale / 400 // Adjust sensitivity
+      const panScale = scale / 800 // Adjust sensitivity for smoother dragging
 
       setMandelbrotParams({
         ...mandelbrotParams,
-        panX: mandelbrotParams.panX + deltaX * panScale,
-        panY: mandelbrotParams.panY + deltaY * panScale,
+        panX: mandelbrotParams.panX - deltaX * panScale,
+        panY: mandelbrotParams.panY - deltaY * panScale,
       })
 
       setLastMousePos({ x: e.clientX, y: e.clientY })

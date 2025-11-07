@@ -125,6 +125,23 @@ export function Canvas({
     const currentRenderId = renderIdRef.current
 
     if (mode === "mandelbrot") {
+      // For Mandelbrot, render immediately without debounce for zoom/pan changes
+      // but still use debouncing for other parameter changes to avoid excessive computation
+      const isOnlyZoomPanChange = (() => {
+        const current = mandelbrotParams
+        const last = lastParamsRef.current ? JSON.parse(lastParamsRef.current) : null
+        if (!last) return false
+
+        // Check if only zoom and pan changed
+        return current.iterations === last.iterations &&
+               current.isJuliaSet === last.isJuliaSet &&
+               JSON.stringify(current.colorPalette) === JSON.stringify(last.colorPalette) &&
+               current.juliaSeedX === last.juliaSeedX &&
+               current.juliaSeedY === last.juliaSeedY
+      })()
+
+      const debounceTime = isOnlyZoomPanChange ? 10 : 50 // Much faster for zoom/pan only
+
       renderTimeoutRef.current = setTimeout(() => {
         const offscreenCtx = offscreenCanvasRef.current?.getContext("2d", { alpha: false })
         if (offscreenCtx && offscreenCanvasRef.current) {
@@ -147,7 +164,7 @@ export function Canvas({
               }
             })
         }
-      }, 150)
+      }, debounceTime)
       return
     }
 
@@ -170,18 +187,17 @@ export function Canvas({
       drawCellularAutomata(ctx, canvas.width, canvas.height, cellularAutomataParams)
     } else if (mode === "flow-field" && flowFieldParams) {
       // Flow field rendering is handled asynchronously with debouncing
-      if (mode === "flow-field") {
-        renderTimeoutRef.current = setTimeout(async () => {
-          try {
-            await drawFlowFieldAsync(ctx, canvas.width, canvas.height, flowFieldParams, currentRenderId, activeWorkersRef)
-          } catch (err) {
-            if (err instanceof Error && err.message !== 'Render cancelled') {
-              console.error('Flow field render error:', err)
-            }
+      renderTimeoutRef.current = setTimeout(async () => {
+        try {
+          await drawFlowFieldAsync(ctx, canvas.width, canvas.height, flowFieldParams, currentRenderId, activeWorkersRef)
+        } catch (err) {
+          if (err instanceof Error && err.message !== 'Render cancelled') {
+            console.error('Flow field render error:', err)
           }
-        }, 150)
-        return
-      }
+        }
+      }, 150)
+      return
+    }
 
     return () => {
       if (renderTimeoutRef.current) {
@@ -200,7 +216,6 @@ export function Canvas({
     strangeAttractorParams,
     cellularAutomataParams,
     flowFieldParams,
-    reactionDiffusionParams,
     renderGradient,
   ])
 

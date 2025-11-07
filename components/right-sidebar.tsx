@@ -17,7 +17,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface RightSidebarProps {
@@ -44,8 +43,6 @@ interface RightSidebarProps {
   setCellularAutomataParams: (params: CellularAutomataParams) => void
   flowFieldParams: FlowFieldParams
   setFlowFieldParams: (params: FlowFieldParams) => void
-  reactionDiffusionParams: ReactionDiffusionParams
-  setReactionDiffusionParams: (params: ReactionDiffusionParams) => void
 }
 
 export function RightSidebar({
@@ -72,8 +69,6 @@ export function RightSidebar({
   setCellularAutomataParams,
   flowFieldParams,
   setFlowFieldParams,
-  reactionDiffusionParams,
-  setReactionDiffusionParams,
 }: RightSidebarProps) {
   return (
     <div className="h-full bg-card flex flex-col overflow-hidden">
