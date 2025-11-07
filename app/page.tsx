@@ -50,27 +50,9 @@ export interface MandelbrotParams {
   isJuliaSet: boolean
 }
 
-export interface NewtonParams {
-  roots: number
-  iterations: number
-  rootColors: string[]
-}
 
-export interface FlameParams {
-  functionSet: string
-  palette: ColorStop[]
-  gamma: number
-}
 
-export interface LSystemParams {
-  preset: string
-  iteration: number
-  angle: number
-  lineWeight: number
-  lineColor: string
-}
-
-export type Mode = "template" | "gradient" | "chaos-game" | "mandelbrot" | "newton" | "flame" | "lsystem"
+export type Mode = "template" | "gradient" | "chaos-game" | "mandelbrot"
 
 const defaultGradientState: GradientState = {
   type: "linear",
@@ -121,34 +103,12 @@ export default function Home() {
       { color: "#ff6b00", position: 50, alpha: 1 },
       { color: "#ffff00", position: 100, alpha: 1 },
     ],
-    juliaSeedX: -0.5,
-    juliaSeedY: 0,
+    juliaSeedX: -0.7,
+    juliaSeedY: 0.27015,
     isJuliaSet: false,
   })
 
-  const [newtonParams, setNewtonParams] = useState<NewtonParams>({
-    roots: 3,
-    iterations: 50,
-    rootColors: ["#ff1744", "#00e676", "#2979f3"],
-  })
 
-  const [flameParams, setFlameParams] = useState<FlameParams>({
-    functionSet: "Sinusoidal",
-    palette: [
-      { color: "#000000", position: 0, alpha: 1 },
-      { color: "#ff6b00", position: 50, alpha: 1 },
-      { color: "#ffff00", position: 100, alpha: 1 },
-    ],
-    gamma: 1.5,
-  })
-
-  const [lsystemParams, setLSystemParams] = useState<LSystemParams>({
-    preset: "Fern",
-    iteration: 5,
-    angle: 25,
-    lineWeight: 2,
-    lineColor: "#90ee90",
-  })
 
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
@@ -194,12 +154,6 @@ export default function Home() {
               setChaosGameParams={setChaosGameParams}
               mandelbrotParams={mandelbrotParams}
               setMandelbrotParams={setMandelbrotParams}
-              newtonParams={newtonParams}
-              setNewtonParams={setNewtonParams}
-              flameParams={flameParams}
-              setFlameParams={setFlameParams}
-              lsystemParams={lsystemParams}
-              setLSystemParams={setLSystemParams}
             />
           </div>
 
@@ -222,9 +176,7 @@ export default function Home() {
             showCenterHandle={showCenterHandle}
             chaosGameParams={chaosGameParams}
             mandelbrotParams={mandelbrotParams}
-            newtonParams={newtonParams}
-            flameParams={flameParams}
-            lsystemParams={lsystemParams}
+            setMandelbrotParams={setMandelbrotParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
           />
@@ -257,12 +209,6 @@ export default function Home() {
               setChaosGameParams={setChaosGameParams}
               mandelbrotParams={mandelbrotParams}
               setMandelbrotParams={setMandelbrotParams}
-              newtonParams={newtonParams}
-              setNewtonParams={setNewtonParams}
-              flameParams={flameParams}
-              setFlameParams={setFlameParams}
-              lsystemParams={lsystemParams}
-              setLSystemParams={setLSystemParams}
               canvasBackgrounds={canvasBackgrounds}
               setCanvasBackgrounds={setCanvasBackgrounds}
               selectedBgIndex={selectedBgIndex}

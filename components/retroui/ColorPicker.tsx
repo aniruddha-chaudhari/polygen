@@ -34,29 +34,36 @@ export function ColorPicker({ value, onChange, className = "" }: ColorPickerProp
           onClick={() => setIsOpen(true)}
         />
       </Popover.Trigger>
-      <Popover.Content className="w-80 p-4 font-sans shadow-md">
-        <AdvancedColorPicker
-          value={value}
-          onChange={handleColorChange}
-          className="gap-3"
-        >
-          {/* Color Selection Area */}
-          <ColorPickerSelection className="aspect-square w-full" />
+      <Popover.Content 
+        className="w-80 p-4 font-sans shadow-md" 
+        side="left"
+        align="start"
+        sideOffset={8}
+        collisionPadding={20}
+      >
+        <div className="gap-3 flex flex-col">
+          <AdvancedColorPicker
+            value={value}
+            onChange={handleColorChange}
+          >
+            {/* Color Selection Area */}
+            <ColorPickerSelection className="aspect-square w-full" />
 
-          {/* Controls */}
-          <div className="space-y-3">
-            <div className="flex justify-end mb-2">
-              <ColorPickerEyeDropper />
-            </div>
+            {/* Controls */}
+            <div className="space-y-3">
+              <div className="flex justify-end mb-2">
+                <ColorPickerEyeDropper />
+              </div>
 
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider block mb-2">
-                Hue
-              </label>
-              <ColorPickerHue />
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider block mb-2">
+                  Hue
+                </label>
+                <ColorPickerHue />
+              </div>
             </div>
-          </div>
-        </AdvancedColorPicker>
+          </AdvancedColorPicker>
+        </div>
       </Popover.Content>
     </Popover>
   )

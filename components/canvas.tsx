@@ -5,9 +5,6 @@ import type {
   GradientState,
   ChaosGameParams,
   MandelbrotParams,
-  NewtonParams,
-  FlameParams,
-  LSystemParams,
   Mode,
 } from "@/app/page"
 
@@ -17,9 +14,6 @@ interface CanvasProps {
   gradient: GradientState
   chaosGameParams: ChaosGameParams
   mandelbrotParams: MandelbrotParams
-  newtonParams: NewtonParams
-  flameParams: FlameParams
-  lsystemParams: LSystemParams
 }
 
 const templates = [
@@ -31,21 +25,50 @@ const templates = [
   { name: "Sky", colors: ["#87ceeb", "#e0f6ff"] },
 ]
 
+// Number of worker threads to use (typically CPU cores - 1)
+const NUM_WORKERS = typeof navigator !== 'undefined' ? Math.max(2, navigator.hardwareConcurrency || 4) : 4;
+
 export function Canvas({
   mode,
   selectedTemplate,
   gradient,
   chaosGameParams,
   mandelbrotParams,
-  newtonParams,
-  flameParams,
-  lsystemParams,
 }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const isRenderingRef = useRef(false)
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const activeWorkersRef = useRef<Worker[]>([])
+  const renderIdRef = useRef(0)
+  const lastParamsRef = useRef<string>('')
 
   const renderGradient = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      // ... existing gradient code ...
+      const { type, angle, centerX, centerY, colorStops } = gradient
+
+      let grad: CanvasGradient
+      if (type === "linear") {
+        const angleRad = (angle * Math.PI) / 180
+        const x1 = width / 2 - (Math.cos(angleRad) * width) / 2
+        const y1 = height / 2 - (Math.sin(angleRad) * height) / 2
+        const x2 = width / 2 + (Math.cos(angleRad) * width) / 2
+        const y2 = height / 2 + (Math.sin(angleRad) * height) / 2
+        grad = ctx.createLinearGradient(x1, y1, x2, y2)
+      } else {
+        const cx = (centerX / 100) * width
+        const cy = (centerY / 100) * height
+        const radius = Math.max(width, height) * 0.7
+        grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
+      }
+
+      const sortedStops = [...colorStops].sort((a, b) => a.position - b.position)
+      for (const stop of sortedStops) {
+        grad.addColorStop(stop.position / 100, stop.color)
+      }
+
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, width, height)
     },
     [gradient],
   )
@@ -54,12 +77,77 @@ export function Canvas({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true })
     if (!ctx) return
 
-    canvas.width = canvas.offsetWidth
-    canvas.height = canvas.offsetHeight
+    // Only resize if dimensions actually changed
+    const currentWidth = canvas.offsetWidth
+    const currentHeight = canvas.offsetHeight
+    
+    const needsResize = canvas.width !== currentWidth || canvas.height !== currentHeight
+    
+    if (needsResize) {
+      canvas.width = currentWidth
+      canvas.height = currentHeight
+      
+      // Recreate offscreen canvas
+      offscreenCanvasRef.current = document.createElement('canvas')
+      offscreenCanvasRef.current.width = currentWidth
+      offscreenCanvasRef.current.height = currentHeight
+    }
 
+    // For Mandelbrot, check if params actually changed to avoid unnecessary renders
+    if (mode === "mandelbrot") {
+      const paramsString = JSON.stringify(mandelbrotParams)
+      if (paramsString === lastParamsRef.current && !needsResize) {
+        // Parameters haven't changed, skip render
+        return
+      }
+      lastParamsRef.current = paramsString
+    }
+
+    // Cancel any pending workers
+    activeWorkersRef.current.forEach(worker => worker.terminate())
+    activeWorkersRef.current = []
+
+    // Clear any pending render timeout
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current)
+    }
+
+    // Increment render ID to invalidate old renders
+    renderIdRef.current++
+    const currentRenderId = renderIdRef.current
+
+    // Debounce rendering for Mandelbrot to reduce flickering during drag/zoom
+    if (mode === "mandelbrot") {
+      renderTimeoutRef.current = setTimeout(() => {
+        const offscreenCtx = offscreenCanvasRef.current?.getContext("2d", { alpha: false })
+        if (offscreenCtx && offscreenCanvasRef.current) {
+          drawMandelbrotAsync(
+            offscreenCtx, 
+            offscreenCanvasRef.current.width, 
+            offscreenCanvasRef.current.height, 
+            mandelbrotParams,
+            currentRenderId,
+            activeWorkersRef
+          ).then(() => {
+            // Only update if this render is still current
+            if (currentRenderId === renderIdRef.current && offscreenCanvasRef.current) {
+              ctx.drawImage(offscreenCanvasRef.current, 0, 0)
+            }
+          }).catch((err) => {
+            // Render was cancelled or failed, ignore
+            if (err.message !== 'Render cancelled') {
+              console.error('Render error:', err)
+            }
+          })
+        }
+      }, 150) // Increased debounce to 150ms for even smoother dragging
+      return
+    }
+
+    // For other modes, render directly (they're fast)
     if (mode === "template") {
       const template = templates[selectedTemplate % templates.length]
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
@@ -71,14 +159,15 @@ export function Canvas({
       renderGradient(ctx, canvas.width, canvas.height)
     } else if (mode === "chaos-game") {
       drawChaosGame(ctx, canvas.width, canvas.height, chaosGameParams)
-    } else if (mode === "mandelbrot") {
-      drawMandelbrot(ctx, canvas.width, canvas.height, mandelbrotParams)
-    } else if (mode === "newton") {
-      drawNewton(ctx, canvas.width, canvas.height, newtonParams)
-    } else if (mode === "flame") {
-      drawFlame(ctx, canvas.width, canvas.height, flameParams)
-    } else if (mode === "lsystem") {
-      drawLSystem(ctx, canvas.width, canvas.height, lsystemParams)
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current)
+      }
+      activeWorkersRef.current.forEach(worker => worker.terminate())
+      activeWorkersRef.current = []
     }
   }, [
     mode,
@@ -86,13 +175,10 @@ export function Canvas({
     gradient,
     chaosGameParams,
     mandelbrotParams,
-    newtonParams,
-    flameParams,
-    lsystemParams,
     renderGradient,
   ])
 
-  return <canvas ref={canvasRef} className="w-full h-full" crossOrigin="anonymous" />
+  return <canvas ref={canvasRef} className="w-full h-full" />
 }
 
 function hexToRgba(hex: string, alpha = 1): string {
@@ -134,12 +220,95 @@ function drawChaosGame(ctx: CanvasRenderingContext2D, width: number, height: num
   }
 }
 
-function drawMandelbrot(ctx: CanvasRenderingContext2D, width: number, height: number, params: MandelbrotParams) {
-  ctx.fillStyle = "#000000"
-  ctx.fillRect(0, 0, width, height)
+async function drawMandelbrotAsync(
+  ctx: CanvasRenderingContext2D, 
+  width: number, 
+  height: number, 
+  params: MandelbrotParams,
+  renderId?: number,
+  activeWorkersRef?: React.MutableRefObject<Worker[]>
+) {
+  // Don't clear the canvas here - keep previous frame visible during rendering
 
+  // Check if Workers are supported
+  if (typeof Worker === 'undefined') {
+    drawMandelbrotSingleThreaded(ctx, width, height, params)
+    return
+  }
+
+  try {
+    const imageData = ctx.createImageData(width, height)
+    const rowsPerWorker = Math.ceil(height / NUM_WORKERS)
+    const promises: Promise<void>[] = []
+    const workers: Worker[] = []
+
+    for (let i = 0; i < NUM_WORKERS; i++) {
+      const startRow = i * rowsPerWorker
+      const endRow = Math.min((i + 1) * rowsPerWorker, height)
+      
+      if (startRow >= height) break
+
+      const promise = new Promise<void>((resolve, reject) => {
+        try {
+          const worker = new Worker('/mandelbrot-worker.js')
+          workers.push(worker)
+          
+          const timeout = setTimeout(() => {
+            worker.terminate()
+            reject(new Error('Worker timeout'))
+          }, 10000) // 10 second timeout
+          
+          worker.onmessage = (e) => {
+            clearTimeout(timeout)
+            const { imageData: workerData, startRow: sr } = e.data
+            const offset = sr * width * 4
+            imageData.data.set(new Uint8ClampedArray(workerData), offset)
+            resolve()
+          }
+
+          worker.onerror = (error) => {
+            clearTimeout(timeout)
+            reject(error)
+          }
+
+          worker.postMessage({ width, height, params, startRow, endRow })
+        } catch (err) {
+          reject(err)
+        }
+      })
+
+      promises.push(promise)
+    }
+
+    // Track active workers
+    if (activeWorkersRef) {
+      activeWorkersRef.current = workers
+    }
+
+    await Promise.all(promises)
+    
+    // Terminate all workers
+    workers.forEach(w => w.terminate())
+    if (activeWorkersRef) {
+      activeWorkersRef.current = []
+    }
+    
+    // Only update canvas after all workers complete
+    ctx.putImageData(imageData, 0, 0)
+  } catch (error) {
+    console.warn('Worker rendering failed, falling back to single-threaded:', error)
+    drawMandelbrotSingleThreaded(ctx, width, height, params)
+  }
+}
+
+function drawMandelbrotSingleThreaded(ctx: CanvasRenderingContext2D, width: number, height: number, params: MandelbrotParams) {
   const imageData = ctx.createImageData(width, height)
   const data = imageData.data
+
+  // Dynamically scale iterations based on zoom level
+  const baseIterations = params.iterations
+  const zoomFactor = Math.log10(params.zoom + 1)
+  const dynamicIterations = Math.min(1000, Math.max(baseIterations, Math.floor(baseIterations * (1 + zoomFactor))))
 
   const xMin = -2.5 / params.zoom + params.panX
   const xMax = 1 / params.zoom + params.panX
@@ -160,7 +329,7 @@ function drawMandelbrot(ctx: CanvasRenderingContext2D, width: number, height: nu
         y = y0
       }
 
-      while (iter < params.iterations && x * x + y * y < 4) {
+      while (iter < dynamicIterations && x * x + y * y < 4) {
         if (params.isJuliaSet) {
           const xtmp = x * x - y * y + params.juliaSeedX
           y = 2 * x * y + params.juliaSeedY
@@ -173,7 +342,7 @@ function drawMandelbrot(ctx: CanvasRenderingContext2D, width: number, height: nu
         iter++
       }
 
-      const ratio = iter / params.iterations
+      const ratio = iter / dynamicIterations
       const idx = (py * width + px) * 4
       const color = interpolateColor(params.colorPalette, ratio)
       data[idx] = color.r
@@ -184,192 +353,6 @@ function drawMandelbrot(ctx: CanvasRenderingContext2D, width: number, height: nu
   }
 
   ctx.putImageData(imageData, 0, 0)
-}
-
-function drawNewton(ctx: CanvasRenderingContext2D, width: number, height: number, params: NewtonParams) {
-  ctx.fillStyle = "#000000"
-  ctx.fillRect(0, 0, width, height)
-
-  const imageData = ctx.createImageData(width, height)
-  const data = imageData.data
-
-  for (let py = 0; py < height; py++) {
-    for (let px = 0; px < width; px++) {
-      let x = (px / width) * 4 - 2
-      let y = (py / height) * 4 - 2
-
-      let closestRoot = 0
-      let closestDist = Number.POSITIVE_INFINITY
-
-      for (let iter = 0; iter < params.iterations; iter++) {
-        // Newton's method for z^n - 1 = 0
-        const r2 = x * x + y * y
-        if (r2 < 0.0001) break
-
-        // Compute derivative numerically
-        const n = params.roots
-        const re =
-          Math.pow(r2, n / 2 - 1) *
-          (x * Math.cos((n - 1) * Math.atan2(y, x)) - y * Math.sin((n - 1) * Math.atan2(y, x)))
-        const im =
-          Math.pow(r2, n / 2 - 1) *
-          (x * Math.sin((n - 1) * Math.atan2(y, x)) + y * Math.cos((n - 1) * Math.atan2(y, x)))
-
-        // Newton step (simplified)
-        const stepX = x - (re * x - im * y) / (re * re + im * im + 0.0001)
-        const stepY = y - (im * x + re * y) / (re * re + im * im + 0.0001)
-
-        x = stepX
-        y = stepY
-
-        // Check convergence to roots
-        for (let root = 0; root < params.roots; root++) {
-          const angle = (Math.PI * 2 * root) / params.roots
-          const rootX = Math.cos(angle)
-          const rootY = Math.sin(angle)
-          const dist = Math.hypot(x - rootX, y - rootY)
-          if (dist < closestDist) {
-            closestDist = dist
-            closestRoot = root
-          }
-        }
-      }
-
-      const idx = (py * width + px) * 4
-      const color = hexToRgb(params.rootColors[closestRoot % params.rootColors.length])
-      data[idx] = color.r
-      data[idx + 1] = color.g
-      data[idx + 2] = color.b
-      data[idx + 3] = 255
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0)
-}
-
-function drawFlame(ctx: CanvasRenderingContext2D, width: number, height: number, params: FlameParams) {
-  ctx.fillStyle = "#000000"
-  ctx.fillRect(0, 0, width, height)
-
-  const imageData = ctx.createImageData(width, height)
-  const data = imageData.data
-
-  // Simple IFS-based flame with variations
-  const points: number[][] = []
-  let x = Math.random()
-  let y = Math.random()
-
-  for (let i = 0; i < 100000; i++) {
-    const rand = Math.random()
-    let newX, newY
-
-    if (rand < 0.5) {
-      newX = 0.5 * x
-      newY = 0.5 * y
-    } else if (rand < 0.75) {
-      newX = 0.5 * x + 0.5
-      newY = 0.5 * y
-    } else {
-      newX = 0.5 * x + 0.25
-      newY = 0.5 * y + 0.5
-    }
-
-    x = newX
-    y = newY
-    const px = Math.floor(x * width)
-    const py = Math.floor(y * height)
-
-    if (px >= 0 && px < width && py >= 0 && py < height) {
-      const idx = (py * width + px) * 4
-      const ratio = i / 100000
-      const color = interpolateColor(params.palette, ratio)
-      data[idx] = Math.min(255, data[idx] + color.r / 10)
-      data[idx + 1] = Math.min(255, data[idx + 1] + color.g / 10)
-      data[idx + 2] = Math.min(255, data[idx + 2] + color.b / 10)
-      data[idx + 3] = 255
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0)
-}
-
-function drawLSystem(ctx: CanvasRenderingContext2D, width: number, height: number, params: LSystemParams) {
-  ctx.fillStyle = "#000000"
-  ctx.fillRect(0, 0, width, height)
-
-  const rules: { [key: string]: string } = {
-    Fern: "X|->|F-[[X]+X]+F[+FX]-X|F|->|FF",
-    Tree: "F|->|FF-[-F+F+F]+[+F-F-F]",
-    "Koch Curve": "F|->|F+F-F-F+F",
-    "Dragon Curve": "FX|->|X|X|->|X+YF+|Y|->|-FX-Y",
-    "Sierpinski Triangle": "A|->|B-A-B|B|->|A+B+A",
-  }
-
-  const ruleStr = rules[params.preset] || rules.Fern
-  const [axiom, ...rulePairs] = ruleStr.split("|->|")
-
-  let system = axiom.trim()
-  for (let i = 0; i < params.iteration; i++) {
-    let newSystem = ""
-    for (const char of system) {
-      const ruleIndex = rulePairs.findIndex((r) => r.includes(char + "|->|"))
-      if (ruleIndex !== -1) {
-        const replacement = rulePairs[ruleIndex].split("|->|")[1]
-        newSystem += replacement
-      } else {
-        newSystem += char
-      }
-    }
-    system = newSystem
-  }
-
-  // Turtle graphics rendering
-  let x = width / 2
-  let y = height * 0.9
-  let angle = Math.PI / 2
-  const stack: any[] = []
-
-  ctx.strokeStyle = params.lineColor
-  ctx.lineWidth = params.lineWeight
-  ctx.lineCap = "round"
-
-  const stepSize = 100 / (params.iteration + 1)
-
-  for (const char of system) {
-    switch (char) {
-      case "F":
-      case "A":
-      case "B":
-      case "X":
-      case "Y":
-        const newX = x + stepSize * Math.cos(angle)
-        const newY = y - stepSize * Math.sin(angle)
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(newX, newY)
-        ctx.stroke()
-        x = newX
-        y = newY
-        break
-      case "+":
-        angle -= (params.angle * Math.PI) / 180
-        break
-      case "-":
-        angle += (params.angle * Math.PI) / 180
-        break
-      case "[":
-        stack.push({ x, y, angle })
-        break
-      case "]":
-        if (stack.length > 0) {
-          const state = stack.pop()
-          x = state.x
-          y = state.y
-          angle = state.angle
-        }
-        break
-    }
-  }
 }
 
 function interpolateColor(palette: any[], ratio: number): { r: number; g: number; b: number } {

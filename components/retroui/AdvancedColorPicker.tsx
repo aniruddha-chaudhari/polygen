@@ -45,10 +45,10 @@ export const useColorPicker = () => {
   return context;
 };
 
-export type ColorPickerProps = HTMLAttributes<HTMLDivElement> & {
+export type ColorPickerProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
   value?: Parameters<typeof Color>[0];
   defaultValue?: Parameters<typeof Color>[0];
-  onChange?: (value: Parameters<typeof Color.rgb>[0]) => void;
+  onChange?: (value: string) => void;
 };
 
 export const ColorPicker = ({
@@ -74,26 +74,49 @@ export const ColorPicker = ({
     selectedColor.alpha() * 100 || defaultColor.alpha() * 100
   );
   const [mode, setMode] = useState('hex');
+  const isUpdatingFromProp = useRef(false);
 
   // Update color when controlled value changes
   useEffect(() => {
     if (value) {
       const color = Color(value);
-      setHue(color.hue());
-      setSaturation(color.saturationl());
-      setLightness(color.lightness());
-      setAlpha(color.alpha() * 100);
+      const newHue = color.hue();
+      const newSat = color.saturationl();
+      const newLight = color.lightness();
+      const newAlpha = color.alpha() * 100;
+      
+      // Only update if values are significantly different to avoid precision issues
+      const hasChanged = 
+        Math.abs(hue - newHue) > 0.5 ||
+        Math.abs(saturation - newSat) > 0.5 ||
+        Math.abs(lightness - newLight) > 0.5 ||
+        Math.abs(alpha - newAlpha) > 0.5;
+      
+      if (hasChanged) {
+        isUpdatingFromProp.current = true;
+        setHue(newHue);
+        setSaturation(newSat);
+        setLightness(newLight);
+        setAlpha(newAlpha);
+        // Reset flag after state updates are processed
+        setTimeout(() => {
+          isUpdatingFromProp.current = false;
+        }, 0);
+      }
     }
-  }, [value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]); // Only re-run when value prop changes, not when internal state changes
 
   // Notify parent of changes
   useEffect(() => {
-    if (onChange) {
+    // Don't trigger onChange if we're updating from the prop
+    if (onChange && !isUpdatingFromProp.current) {
       const color = Color.hsl(hue, saturation, lightness);
       const hex = color.hex();
       onChange(hex);
     }
-  }, [hue, saturation, lightness]); // onChange should be stable from parent useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hue, saturation, lightness]); // Intentionally omitting onChange to prevent infinite loops
 
   return (
     <ColorPickerContext.Provider
@@ -236,7 +259,7 @@ export const ColorPickerHue = ({
   );
 };
 
-export type ColorPickerAlphaProps = ComponentProps<typeof SliderPrimitive.Root>;
+export type ColorPickerAlphaProps = HTMLAttributes<HTMLDivElement>;
 
 export const ColorPickerAlpha = ({
   className,
@@ -249,7 +272,7 @@ export const ColorPickerAlpha = ({
   }, [setAlpha]);
 
   return (
-    <div className="relative">
+    <div className={cn("relative", className)} {...props}>
       <input
         type="range"
         min="0"
@@ -260,7 +283,6 @@ export const ColorPickerAlpha = ({
         style={{
           background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 100%)',
         }}
-        {...props}
       />
       <div className="absolute inset-0 border border-black pointer-events-none rounded-none" />
     </div>
@@ -305,7 +327,7 @@ export const ColorPickerEyeDropper = ({
   );
 };
 
-export type ColorPickerOutputProps = ComponentProps<typeof SelectTrigger>;
+export type ColorPickerOutputProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'>;
 
 const formats = ['hex', 'rgb', 'css', 'hsl'];
 
@@ -316,18 +338,20 @@ export const ColorPickerOutput = ({
   const { mode, setMode } = useColorPicker();
 
   return (
-    <Select onValueChange={setMode} value={mode}>
-      <Select.Trigger className="h-8 w-20 shrink-0 text-xs border-2 border-black bg-background" {...props}>
-        <Select.Value placeholder="Mode" />
-      </Select.Trigger>
-      <Select.Content>
-        {formats.map((format) => (
-          <Select.Item className="text-xs" key={format} value={format}>
-            {format.toUpperCase()}
-          </Select.Item>
-        ))}
-      </Select.Content>
-    </Select>
+    <div className={className} {...props}>
+      <Select onValueChange={setMode} value={mode}>
+        <Select.Trigger className="h-8 w-20 shrink-0 text-xs border-2 border-black bg-background">
+          <Select.Value placeholder="Mode" />
+        </Select.Trigger>
+        <Select.Content>
+          {formats.map((format) => (
+            <Select.Item className="text-xs" key={format} value={format}>
+              {format.toUpperCase()}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+    </div>
   );
 };
 

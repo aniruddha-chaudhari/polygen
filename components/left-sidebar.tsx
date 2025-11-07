@@ -1,7 +1,7 @@
 "use client"
 
-import { FileText, PaintBucket, Sparkles, Maximize, GitBranch, Flame, Sprout } from "lucide-react"
-import type { Mode, ChaosGameParams, MandelbrotParams, NewtonParams, FlameParams, LSystemParams } from "@/app/page"
+import { FileText, PaintBucket, Sparkles, Maximize } from "lucide-react"
+import type { Mode, ChaosGameParams, MandelbrotParams } from "@/app/page"
 
 interface LeftSidebarProps {
   mode: Mode
@@ -14,12 +14,6 @@ interface LeftSidebarProps {
   setChaosGameParams: (params: ChaosGameParams) => void
   mandelbrotParams: MandelbrotParams
   setMandelbrotParams: (params: MandelbrotParams) => void
-  newtonParams: NewtonParams
-  setNewtonParams: (params: NewtonParams) => void
-  flameParams: FlameParams
-  setFlameParams: (params: FlameParams) => void
-  lsystemParams: LSystemParams
-  setLSystemParams: (params: LSystemParams) => void
 }
 
 export function LeftSidebar({
@@ -33,12 +27,6 @@ export function LeftSidebar({
   setChaosGameParams,
   mandelbrotParams,
   setMandelbrotParams,
-  newtonParams,
-  setNewtonParams,
-  flameParams,
-  setFlameParams,
-  lsystemParams,
-  setLSystemParams,
 }: LeftSidebarProps) {
   const tabs = [
     {
@@ -60,21 +48,6 @@ export function LeftSidebar({
       id: "mandelbrot" as const,
       label: "Infinite Zoom",
       icon: Maximize,
-    },
-    {
-      id: "newton" as const,
-      label: "Root Finder",
-      icon: GitBranch,
-    },
-    {
-      id: "flame" as const,
-      label: "Cosmic Flame",
-      icon: Flame,
-    },
-    {
-      id: "lsystem" as const,
-      label: "Organic Growth",
-      icon: Sprout,
     },
   ]
 

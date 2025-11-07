@@ -4,11 +4,8 @@ import { TemplateGallery } from "./template-gallery"
 import { GradientControls } from "./gradient-controls"
 import { ChaosGameControls } from "./chaos-game-controls"
 import { MandelbrotControls } from "./mandelbrot-controls"
-import { NewtonControls } from "./newton-controls"
-import { FlameControls } from "./flame-controls"
-import { LSystemControls } from "./lsystem-controls"
 import { CanvasBackgroundManager } from "./canvas-background-manager"
-import type { Mode, ChaosGameParams, MandelbrotParams, NewtonParams, FlameParams, LSystemParams } from "@/app/page"
+import type { Mode, ChaosGameParams, MandelbrotParams } from "@/app/page"
 
 interface RightSidebarProps {
   mode: Mode
@@ -22,12 +19,6 @@ interface RightSidebarProps {
   setChaosGameParams: (params: ChaosGameParams) => void
   mandelbrotParams: MandelbrotParams
   setMandelbrotParams: (params: MandelbrotParams) => void
-  newtonParams: NewtonParams
-  setNewtonParams: (params: NewtonParams) => void
-  flameParams: FlameParams
-  setFlameParams: (params: FlameParams) => void
-  lsystemParams: LSystemParams
-  setLSystemParams: (params: LSystemParams) => void
   canvasBackgrounds: string[]
   setCanvasBackgrounds: (bg: string[]) => void
   selectedBgIndex: number | null
@@ -46,12 +37,6 @@ export function RightSidebar({
   setChaosGameParams,
   mandelbrotParams,
   setMandelbrotParams,
-  newtonParams,
-  setNewtonParams,
-  flameParams,
-  setFlameParams,
-  lsystemParams,
-  setLSystemParams,
   canvasBackgrounds,
   setCanvasBackgrounds,
   selectedBgIndex,
@@ -100,29 +85,7 @@ export function RightSidebar({
             </div>
           )}
 
-          {mode === "newton" && (
-            <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Root Finder</h3>
-              <p className="text-xs text-muted-foreground mb-3">Newton's method fractal with polynomial roots</p>
-              <NewtonControls params={newtonParams} setParams={setNewtonParams} />
-            </div>
-          )}
 
-          {mode === "flame" && (
-            <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Cosmic Flame</h3>
-              <p className="text-xs text-muted-foreground mb-3">Fractal flame with iterated function systems</p>
-              <FlameControls params={flameParams} setParams={setFlameParams} />
-            </div>
-          )}
-
-          {mode === "lsystem" && (
-            <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Organic Growth</h3>
-              <p className="text-xs text-muted-foreground mb-3">L-systems for natural branching patterns</p>
-              <LSystemControls params={lsystemParams} setParams={setLSystemParams} />
-            </div>
-          )}
 
           {/* Canvas settings always visible */}
           <div className="border-t-2 border-foreground/10 pt-4">
