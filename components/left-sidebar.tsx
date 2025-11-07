@@ -1,6 +1,19 @@
 "use client"
 
-import { FileText, PaintBucket, Sparkles, Maximize, Waves, Orbit, Grid3x3, Wind } from "lucide-react"
+import {
+  FileText,
+  PaintBucket,
+  Sparkles,
+  Maximize,
+  Waves,
+  Orbit,
+  Grid3x3,
+  Wind,
+  Hexagon,
+  Circle,
+  Box,
+  Zap,
+} from "lucide-react"
 import type {
   Mode,
   ChaosGameParams,
@@ -9,6 +22,10 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
+  VoronoiParams,
+  TessellationParams,
+  CirclePackingParams,
+  OpArtParams,
 } from "@/app/page"
 
 interface LeftSidebarProps {
@@ -30,6 +47,14 @@ interface LeftSidebarProps {
   setCellularAutomataParams: (params: CellularAutomataParams) => void
   flowFieldParams: FlowFieldParams
   setFlowFieldParams: (params: FlowFieldParams) => void
+  voronoiParams: VoronoiParams
+  setVoronoiParams: (params: VoronoiParams) => void
+  tessellationParams: TessellationParams
+  setTessellationParams: (params: TessellationParams) => void
+  circlePackingParams: CirclePackingParams
+  setCirclePackingParams: (params: CirclePackingParams) => void
+  opArtParams: OpArtParams
+  setOpArtParams: (params: OpArtParams) => void
 }
 
 export function LeftSidebar({
@@ -51,6 +76,14 @@ export function LeftSidebar({
   setCellularAutomataParams,
   flowFieldParams,
   setFlowFieldParams,
+  voronoiParams,
+  setVoronoiParams,
+  tessellationParams,
+  setTessellationParams,
+  circlePackingParams,
+  setCirclePackingParams,
+  opArtParams,
+  setOpArtParams,
 }: LeftSidebarProps) {
   const tabs = [
     {
@@ -92,6 +125,26 @@ export function LeftSidebar({
       id: "flow-field" as const,
       label: "Vector Dreams",
       icon: Wind,
+    },
+    {
+      id: "voronoi" as const,
+      label: "Voronoi Cells",
+      icon: Hexagon,
+    },
+    {
+      id: "tessellation" as const,
+      label: "Tiled Patterns",
+      icon: Box,
+    },
+    {
+      id: "circle-packing" as const,
+      label: "Circle Packing",
+      icon: Circle,
+    },
+    {
+      id: "op-art" as const,
+      label: "Op Art",
+      icon: Zap,
     },
   ]
 

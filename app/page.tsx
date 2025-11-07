@@ -57,7 +57,6 @@ export interface PerlinNoiseParams {
   colorPalette: ColorStop[]
 }
 
-
 export interface StrangeAttractorParams {
   type: "lorenz" | "aizawa" | "dejong"
   a: number
@@ -85,6 +84,47 @@ export interface FlowFieldParams {
   opacity: number
 }
 
+export interface VoronoiParams {
+  pointCount: number
+  layout: "random" | "grid" | "grid-jittered"
+  showBorders: boolean
+  fillCells: boolean
+  lineWeight: number
+  borderColor: string
+  distanceMetric: "euclidean" | "manhattan"
+  colorMode: "random" | "distance"
+  colorPalette: ColorStop[]
+}
+
+export interface TessellationParams {
+  shape: "triangles" | "squares" | "hexagons"
+  offset: number
+  gutter: number
+  fillMode: "solid" | "random" | "gradient"
+  baseColor: string
+  colorPalette: ColorStop[]
+}
+
+export interface CirclePackingParams {
+  packingMode: "random" | "grow-from-center"
+  maxCircles: number
+  padding: number
+  showFill: boolean
+  showStroke: boolean
+  fillColor: string
+  strokeColor: string
+  colorPalette: ColorStop[]
+}
+
+export interface OpArtParams {
+  pattern: "sine-wave" | "warped-grid" | "checkered"
+  frequency: number
+  amplitude: number
+  color1: string
+  color2: string
+  color3: string
+}
+
 export type Mode =
   | "template"
   | "gradient"
@@ -94,6 +134,10 @@ export type Mode =
   | "strange-attractor"
   | "cellular-automata"
   | "flow-field"
+  | "voronoi"
+  | "tessellation"
+  | "circle-packing"
+  | "op-art"
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("gradient")
@@ -184,10 +228,63 @@ export default function Home() {
     opacity: 0.5,
   })
 
+  const [voronoiParams, setVoronoiParams] = useState<VoronoiParams>({
+    pointCount: 50,
+    layout: "random",
+    showBorders: true,
+    fillCells: true,
+    lineWeight: 2,
+    borderColor: "#000000",
+    distanceMetric: "euclidean",
+    colorMode: "random",
+    colorPalette: [
+      { color: "#ff6b6b", position: 0, alpha: 1 },
+      { color: "#4ecdc4", position: 50, alpha: 1 },
+      { color: "#45b7d1", position: 100, alpha: 1 },
+    ],
+  })
+
+  const [tessellationParams, setTessellationParams] = useState<TessellationParams>({
+    shape: "hexagons",
+    offset: 0.5,
+    gutter: 2,
+    fillMode: "gradient",
+    baseColor: "#a78bfa",
+    colorPalette: [
+      { color: "#667eea", position: 0, alpha: 1 },
+      { color: "#764ba2", position: 100, alpha: 1 },
+    ],
+  })
+
+  const [circlePackingParams, setCirclePackingParams] = useState<CirclePackingParams>({
+    packingMode: "random",
+    maxCircles: 500,
+    padding: 2,
+    showFill: true,
+    showStroke: true,
+    fillColor: "#a78bfa",
+    strokeColor: "#000000",
+    colorPalette: [
+      { color: "#667eea", position: 0, alpha: 1 },
+      { color: "#764ba2", position: 100, alpha: 1 },
+    ],
+  })
+
+  const [opArtParams, setOpArtParams] = useState<OpArtParams>({
+    pattern: "sine-wave",
+    frequency: 20,
+    amplitude: 30,
+    color1: "#000000",
+    color2: "#ffffff",
+    color3: "#ff0000",
+  })
+
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const [showCenterHandle, setShowCenterHandle] = useState(true)
+
+  const [mandelbrotAutoZoomActive, setMandelbrotAutoZoomActive] = useState(false)
 
   const handleThemeChange = (newTheme: "dark" | "light") => {
     setTheme(newTheme)
@@ -236,6 +333,14 @@ export default function Home() {
               setCellularAutomataParams={setCellularAutomataParams}
               flowFieldParams={flowFieldParams}
               setFlowFieldParams={setFlowFieldParams}
+              voronoiParams={voronoiParams}
+              setVoronoiParams={setVoronoiParams}
+              tessellationParams={tessellationParams}
+              setTessellationParams={setTessellationParams}
+              circlePackingParams={circlePackingParams}
+              setCirclePackingParams={setCirclePackingParams}
+              opArtParams={opArtParams}
+              setOpArtParams={setOpArtParams}
             />
           </div>
 
@@ -265,6 +370,16 @@ export default function Home() {
             flowFieldParams={flowFieldParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
+            mandelbrotAutoZoomActive={mandelbrotAutoZoomActive}
+            setMandelbrotAutoZoomActive={setMandelbrotAutoZoomActive}
+            voronoiParams={voronoiParams}
+            setVoronoiParams={setVoronoiParams}
+            tessellationParams={tessellationParams}
+            setTessellationParams={setTessellationParams}
+            circlePackingParams={circlePackingParams}
+            setCirclePackingParams={setCirclePackingParams}
+            opArtParams={opArtParams}
+            setOpArtParams={setOpArtParams}
           />
 
           {/* Toggle Right Sidebar Button */}
@@ -307,6 +422,16 @@ export default function Home() {
               setCanvasBackgrounds={setCanvasBackgrounds}
               selectedBgIndex={selectedBgIndex}
               setSelectedBgIndex={setSelectedBgIndex}
+              mandelbrotAutoZoomActive={mandelbrotAutoZoomActive}
+              setMandelbrotAutoZoomActive={setMandelbrotAutoZoomActive}
+              voronoiParams={voronoiParams}
+              setVoronoiParams={setVoronoiParams}
+              tessellationParams={tessellationParams}
+              setTessellationParams={setTessellationParams}
+              circlePackingParams={circlePackingParams}
+              setCirclePackingParams={setCirclePackingParams}
+              opArtParams={opArtParams}
+              setOpArtParams={setOpArtParams}
             />
           </div>
         </div>

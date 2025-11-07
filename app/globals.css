@@ -68,8 +68,6 @@
 }
 
 @theme {
-  --font-head: var(--font-head);
-  --font-sans: var(--font-sans);
   --radius: var(--radius);
 
   --shadow-xs: 1px 1px 0 0 var(--border);
@@ -97,7 +95,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
 
-  --dark-mode: 'class';
+  --dark-mode: "class";
   --color-popover: hsl(var(--card));
   --color-popover-foreground: hsl(var(--card-foreground));
   --color-input: hsl(var(--border));

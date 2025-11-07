@@ -5,13 +5,16 @@ import { Input } from "@/components/retroui/Input"
 import { GradientColorStops } from "@/components/gradient-color-stops"
 import type { MandelbrotParams } from "@/app/page"
 import { Select } from "@/components/retroui/Select"
+import { Play, Pause } from "lucide-react"
 
 interface MandelbrotControlsProps {
   params: MandelbrotParams
   setParams: (params: MandelbrotParams) => void
+  autoZoomActive?: boolean
+  setAutoZoomActive?: (active: boolean) => void
 }
 
-export function MandelbrotControls({ params, setParams }: MandelbrotControlsProps) {
+export function MandelbrotControls({ params, setParams, autoZoomActive, setAutoZoomActive }: MandelbrotControlsProps) {
   const handleChange = (key: keyof MandelbrotParams, value: number | boolean | typeof params.colorPalette) => {
     setParams({ ...params, [key]: value })
   }
@@ -27,13 +30,38 @@ export function MandelbrotControls({ params, setParams }: MandelbrotControlsProp
     handleChange("zoom", linearValue)
   }
 
-  const handlePanChange = (axis: 'panX' | 'panY', value: string) => {
-    const numValue = parseFloat(value) || 0
+  const handlePanChange = (axis: "panX" | "panY", value: string) => {
+    const numValue = Number.parseFloat(value) || 0
     handleChange(axis, numValue)
   }
 
   return (
     <div className="space-y-6">
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auto-Zoom</label>
+        <button
+          onClick={() => setAutoZoomActive?.(!autoZoomActive)}
+          className={`w-full px-4 py-2 text-xs font-semibold rounded border-2 transition-colors ${
+            autoZoomActive
+              ? "bg-primary text-background border-primary"
+              : "bg-background border-primary/40 text-foreground hover:border-primary"
+          }`}
+        >
+          {autoZoomActive ? (
+            <>
+              <Pause className="inline w-3 h-3 mr-2" />
+              ZOOMING...
+            </>
+          ) : (
+            <>
+              <Play className="inline w-3 h-3 mr-2" />
+              START AUTO-ZOOM
+            </>
+          )}
+        </button>
+        <p className="text-xs text-muted-foreground">Smoothly zoom into fractal details and repeating patterns</p>
+      </div>
+
       {/* Set Type Toggle */}
       <div className="space-y-3">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Set Type</label>
@@ -76,7 +104,7 @@ export function MandelbrotControls({ params, setParams }: MandelbrotControlsProp
             <Input
               type="number"
               value={params.panX}
-              onChange={(e) => handlePanChange('panX', e.target.value)}
+              onChange={(e) => handlePanChange("panX", e.target.value)}
               step="0.01"
               className="h-8 text-xs"
             />
@@ -86,7 +114,7 @@ export function MandelbrotControls({ params, setParams }: MandelbrotControlsProp
             <Input
               type="number"
               value={params.panY}
-              onChange={(e) => handlePanChange('panY', e.target.value)}
+              onChange={(e) => handlePanChange("panY", e.target.value)}
               step="0.01"
               className="h-8 text-xs"
             />
@@ -102,7 +130,12 @@ export function MandelbrotControls({ params, setParams }: MandelbrotControlsProp
             {params.iterations}
             {params.zoom > 1 && (
               <span className="text-muted-foreground">
-                → {Math.min(1000, Math.max(params.iterations, Math.floor(params.iterations * (1 + Math.log10(params.zoom + 1)))))} dynamic
+                →{" "}
+                {Math.min(
+                  1000,
+                  Math.max(params.iterations, Math.floor(params.iterations * (1 + Math.log10(params.zoom + 1)))),
+                )}{" "}
+                dynamic
               </span>
             )}
           </span>
