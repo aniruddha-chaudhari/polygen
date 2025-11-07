@@ -1,9 +1,8 @@
 "use client"
 
-import { Slider } from "@/components/ui/slider"
-import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/retroui/Slider"
+import { GradientColorStops } from "@/components/gradient-color-stops"
 import type { PerlinNoiseParams } from "@/app/page"
-import { GradientColorStops } from "./gradient-color-stops"
 
 interface PerlinNoiseControlsProps {
   params: PerlinNoiseParams
@@ -11,58 +10,62 @@ interface PerlinNoiseControlsProps {
 }
 
 export function PerlinNoiseControls({ params, setParams }: PerlinNoiseControlsProps) {
+  const handleChange = (key: keyof PerlinNoiseParams, value: number | typeof params.colorPalette) => {
+    setParams({ ...params, [key]: value })
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <Label htmlFor="scale" className="text-xs font-bold uppercase tracking-wider">
-          Scale: {params.scale.toFixed(2)}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scale</label>
+          <span className="text-xs font-mono text-primary">{params.scale.toFixed(2)}</span>
+        </div>
         <Slider
-          id="scale"
+          value={[params.scale]}
+          onValueChange={([v]) => handleChange("scale", v)}
           min={0.1}
           max={10}
           step={0.1}
-          value={[params.scale]}
-          onValueChange={(value) => setParams({ ...params, scale: value[0] })}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="octaves" className="text-xs font-bold uppercase tracking-wider">
-          Octaves: {params.octaves}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Octaves</label>
+          <span className="text-xs font-mono text-primary">{params.octaves}</span>
+        </div>
         <Slider
-          id="octaves"
+          value={[params.octaves]}
+          onValueChange={([v]) => handleChange("octaves", Math.round(v))}
           min={1}
           max={8}
           step={1}
-          value={[params.octaves]}
-          onValueChange={(value) => setParams({ ...params, octaves: value[0] })}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="threshold" className="text-xs font-bold uppercase tracking-wider">
-          Threshold: {params.threshold.toFixed(2)}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Threshold</label>
+          <span className="text-xs font-mono text-primary">{params.threshold.toFixed(2)}</span>
+        </div>
         <Slider
-          id="threshold"
+          value={[params.threshold]}
+          onValueChange={([v]) => handleChange("threshold", v)}
           min={0}
           max={1}
           step={0.01}
-          value={[params.threshold]}
-          onValueChange={(value) => setParams({ ...params, threshold: value[0] })}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label className="text-xs font-bold uppercase tracking-wider mb-3 block">Color Palette</Label>
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Color Palette</label>
         <GradientColorStops
           colorStops={params.colorPalette}
-          onChange={(stops) => setParams({ ...params, colorPalette: stops })}
+          setColorStops={(palette) => handleChange("colorPalette", palette)}
         />
       </div>
     </div>

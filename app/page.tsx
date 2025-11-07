@@ -58,7 +58,7 @@ export interface PerlinNoiseParams {
 }
 
 export interface ReactionDiffusionParams {
-  preset: "spots" | "stripes" | "labyrinth"
+  preset: "spots" | "stripes" | "labyrinth" | "worms" | "spots-stripes" | "moving-spots"
   feedRate: number
   killRate: number
   speed: number

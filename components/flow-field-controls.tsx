@@ -1,7 +1,6 @@
 "use client"
 
-import { Slider } from "@/components/ui/slider"
-import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/retroui/Slider"
 import type { FlowFieldParams } from "@/app/page"
 
 interface FlowFieldControlsProps {
@@ -10,81 +9,118 @@ interface FlowFieldControlsProps {
 }
 
 export function FlowFieldControls({ params, setParams }: FlowFieldControlsProps) {
+  const handleChange = (key: keyof FlowFieldParams, value: number) => {
+    setParams({ ...params, [key]: value })
+  }
+
+  const handleParticleCountChange = (values: number[]) => {
+    const sliderValue = values[0]
+    // Use step-based mapping to avoid precision issues
+    const steps = [100, 200, 500, 1000, 2000, 5000, 10000]
+    const count = steps[Math.min(sliderValue, steps.length - 1)] || 10000
+    setParams({ ...params, particleCount: count })
+  }
+
+  const handleStepLengthChange = (values: number[]) => {
+    const sliderValue = values[0]
+    // Use step-based mapping
+    const steps = [50, 100, 200, 300, 500, 750, 1000]
+    const length = steps[Math.min(sliderValue, steps.length - 1)] || 1000
+    setParams({ ...params, stepLength: length })
+  }
+
+  // Map particle count to slider step (0-6)
+  const particleSteps = [100, 200, 500, 1000, 2000, 5000, 10000]
+  const particleSliderValue = particleSteps.indexOf(params.particleCount)
+  const safeParticleSliderValue = particleSliderValue === -1 ? 3 : particleSliderValue
+
+  // Map step length to slider step (0-6)
+  const stepSteps = [50, 100, 200, 300, 500, 750, 1000]
+  const stepSliderValue = stepSteps.indexOf(params.stepLength)
+  const safeStepSliderValue = stepSliderValue === -1 ? 1 : stepSliderValue
+
   return (
     <div className="space-y-6">
-      <div>
-        <Label htmlFor="particles" className="text-xs font-bold uppercase tracking-wider">
-          Particle Count: {params.particleCount}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Particle Count</label>
+          <span className="text-xs font-mono text-primary">{params.particleCount.toLocaleString()}</span>
+        </div>
         <Slider
-          id="particles"
-          min={100}
-          max={5000}
-          step={100}
-          value={[params.particleCount]}
-          onValueChange={(value) => setParams({ ...params, particleCount: value[0] })}
+          value={[safeParticleSliderValue]}
+          onValueChange={handleParticleCountChange}
+          min={0}
+          max={6}
+          step={1}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="noise-scale" className="text-xs font-bold uppercase tracking-wider">
-          Noise Scale: {params.noiseScale.toFixed(4)}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Noise Scale</label>
+          <span className="text-xs font-mono text-primary">{params.noiseScale.toFixed(3)}</span>
+        </div>
         <Slider
-          id="noise-scale"
+          value={[params.noiseScale]}
+          onValueChange={([v]) => handleChange("noiseScale", v)}
           min={0.001}
           max={0.1}
           step={0.001}
-          value={[params.noiseScale]}
-          onValueChange={(value) => setParams({ ...params, noiseScale: value[0] })}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="step" className="text-xs font-bold uppercase tracking-wider">
-          Step Length: {params.stepLength}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Step Length</label>
+          <span className="text-xs font-mono text-primary">{params.stepLength}</span>
+        </div>
         <Slider
-          id="step"
-          min={50}
-          max={1000}
-          step={10}
-          value={[params.stepLength]}
-          onValueChange={(value) => setParams({ ...params, stepLength: value[0] })}
+          value={[safeStepSliderValue]}
+          onValueChange={handleStepLengthChange}
+          min={0}
+          max={6}
+          step={1}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="line-weight" className="text-xs font-bold uppercase tracking-wider">
-          Line Weight: {params.lineWeight.toFixed(1)}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Line Weight</label>
+          <span className="text-xs font-mono text-primary">{params.lineWeight}</span>
+        </div>
         <Slider
-          id="line-weight"
+          value={[params.lineWeight]}
+          onValueChange={([v]) => handleChange("lineWeight", v)}
           min={0.5}
           max={5}
           step={0.1}
-          value={[params.lineWeight]}
-          onValueChange={(value) => setParams({ ...params, lineWeight: value[0] })}
           className="w-full"
         />
       </div>
 
-      <div>
-        <Label htmlFor="opacity" className="text-xs font-bold uppercase tracking-wider">
-          Opacity: {params.opacity.toFixed(2)}
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Opacity</label>
+          <span className="text-xs font-mono text-primary">{params.opacity.toFixed(2)}</span>
+        </div>
         <Slider
-          id="opacity"
+          value={[params.opacity]}
+          onValueChange={([v]) => handleChange("opacity", v)}
           min={0.1}
           max={1.0}
-          step={0.05}
-          value={[params.opacity]}
-          onValueChange={(value) => setParams({ ...params, opacity: value[0] })}
+          step={0.01}
           className="w-full"
         />
+      </div>
+
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p><strong>Flow Fields:</strong> Particles follow invisible Perlin noise vectors</p>
+        <p>• Lower noise scale = smoother curves</p>
+        <p>• Higher step length = longer particle paths</p>
+        <p>• More particles = denser visualization</p>
       </div>
     </div>
   )

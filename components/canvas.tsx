@@ -4,8 +4,8 @@ import type React from "react"
 
 import { useRef, useEffect, useCallback } from "react"
 import type { GradientState, ChaosGameParams, MandelbrotParams, Mode } from "@/app/page"
-import { PerlinNoise } from "@/lib/perlin"
-import { AttractorEquations, type AttractorPoint } from "@/lib/attractor-equations"
+import { perlinNoise } from "@/lib/perlin"
+import { StrangeAttractors, type AttractorPoint } from "@/lib/attractor-equations"
 import type {
   PerlinNoiseParams,
   StrangeAttractorParams,
@@ -172,9 +172,33 @@ export function Canvas({
     } else if (mode === "cellular-automata" && cellularAutomataParams) {
       drawCellularAutomata(ctx, canvas.width, canvas.height, cellularAutomataParams)
     } else if (mode === "flow-field" && flowFieldParams) {
-      drawFlowField(ctx, canvas.width, canvas.height, flowFieldParams)
+      // Flow field rendering is handled asynchronously with debouncing
+      if (mode === "flow-field") {
+        renderTimeoutRef.current = setTimeout(async () => {
+          try {
+            await drawFlowFieldAsync(ctx, canvas.width, canvas.height, flowFieldParams, currentRenderId, activeWorkersRef)
+          } catch (err) {
+            if (err instanceof Error && err.message !== 'Render cancelled') {
+              console.error('Flow field render error:', err)
+            }
+          }
+        }, 150)
+        return
+      }
     } else if (mode === "reaction-diffusion" && reactionDiffusionParams) {
-      drawReactionDiffusion(ctx, canvas.width, canvas.height, reactionDiffusionParams)
+      // Reaction-diffusion rendering is handled asynchronously with debouncing
+      if (mode === "reaction-diffusion") {
+        renderTimeoutRef.current = setTimeout(async () => {
+          try {
+            await drawReactionDiffusionAsync(ctx, canvas.width, canvas.height, reactionDiffusionParams, currentRenderId, activeWorkersRef)
+          } catch (err) {
+            if (err instanceof Error && err.message !== 'Render cancelled') {
+              console.error('Reaction-diffusion render error:', err)
+            }
+          }
+        }, 150)
+        return
+      }
     }
 
     return () => {
@@ -405,7 +429,6 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 function drawPerlinNoise(ctx: CanvasRenderingContext2D, width: number, height: number, params: PerlinNoiseParams) {
-  const perlin = new PerlinNoise()
   const imageData = ctx.createImageData(width, height)
   const data = imageData.data
 
@@ -413,13 +436,20 @@ function drawPerlinNoise(ctx: CanvasRenderingContext2D, width: number, height: n
     for (let x = 0; x < width; x++) {
       const nx = (x / width) * params.scale
       const ny = (y / height) * params.scale
-      const value = perlin.octaveNoise(nx, ny, params.octaves)
+      const value = perlinNoise.octaveNoise(nx, ny, params.octaves)
       const normalized = (value + 1) / 2
-      const isAboveThreshold = normalized > params.threshold
 
-      const ratio = isAboveThreshold ? normalized : 0
+      let ratio = normalized
+      if (params.threshold > 0) {
+        if (normalized < params.threshold) {
+          ratio = 0
+        } else {
+          const denom = 1 - params.threshold
+          ratio = denom > 0 ? (normalized - params.threshold) / denom : 1
+        }
+      }
       const idx = (y * width + x) * 4
-      const color = interpolateColor(params.colorPalette, ratio * 100)
+      const color = interpolateColor(params.colorPalette, ratio)
 
       data[idx] = color.r
       data[idx + 1] = color.g
@@ -439,38 +469,42 @@ function drawStrangeAttractor(
 ) {
   ctx.fillStyle = "#0a0a0a"
   ctx.fillRect(0, 0, width, height)
+
+  const points = StrangeAttractors.generatePoints(params.type, {
+    a: params.a,
+    b: params.b,
+    c: params.c,
+    d: params.d
+  }, params.pointDensity)
+
   ctx.strokeStyle = params.color
   ctx.lineWidth = params.lineWeight
-  ctx.globalAlpha = 0.6
+  ctx.globalAlpha = 0.8
+  ctx.beginPath()
 
-  let point: AttractorPoint = { x: 1, y: 1, z: 1 }
-  const scale = Math.min(width, height) / 50
+  // Find min/max for scaling
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  points.forEach((p: AttractorPoint) => {
+    minX = Math.min(minX, p.x)
+    maxX = Math.max(maxX, p.x)
+    minY = Math.min(minY, p.y)
+    maxY = Math.max(maxY, p.y)
+  })
 
-  for (let i = 0; i < params.pointDensity; i++) {
-    if (params.type === "lorenz") {
-      point = AttractorEquations.lorenzStep(point, params.a, params.b, params.c)
-    } else if (params.type === "aizawa") {
-      point = AttractorEquations.aizawaStep(point, params.a, params.b, params.c)
-    } else if (params.type === "dejong") {
-      point = AttractorEquations.deJongStep(point, params.a, params.b, params.c, params.d)
-    }
+  const rangeX = maxX - minX || 1
+  const rangeY = maxY - minY || 1
+  const scale = Math.min(width, height) / Math.max(rangeX, rangeY) * 0.8
 
-    const px = width / 2 + point.x * scale
-    const py = height / 2 + point.y * scale
+  points.forEach((point: AttractorPoint, i: number) => {
+    const px = width / 2 + (point.x - (minX + maxX) / 2) * scale
+    const py = height / 2 + (point.y - (minY + maxY) / 2) * scale
 
     if (i === 0) {
-      ctx.beginPath()
       ctx.moveTo(px, py)
     } else {
       ctx.lineTo(px, py)
     }
-
-    if (i % 100 === 0) {
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.moveTo(px, py)
-    }
-  }
+  })
 
   ctx.stroke()
   ctx.globalAlpha = 1
@@ -486,52 +520,249 @@ function drawCellularAutomata(
   const cols = Math.floor(width / cellSize)
   const rows = Math.floor(height / cellSize)
 
+  const isCyclic = params.algorithm === "cyclic"
+  const stateCount = isCyclic ? 6 : 2
+
   let grid = Array(rows)
     .fill(null)
-    .map(() => Array(cols).fill(params.initialState === "random" ? Math.random() > 0.7 : 0))
+    .map(() => Array(cols).fill(0))
 
-  if (params.initialState === "centered") {
-    grid[Math.floor(rows / 2)][Math.floor(cols / 2)] = 1
+  if (params.initialState === "random") {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        grid[y][x] = isCyclic ? Math.floor(Math.random() * stateCount) : Math.random() < 0.3 ? 1 : 0
+      }
+    }
+  } else {
+    const centerY = Math.floor(rows / 2)
+    const centerX = Math.floor(cols / 2)
+    if (isCyclic) {
+      for (let y = -6; y <= 6; y++) {
+        for (let x = -6; x <= 6; x++) {
+          const dist = Math.sqrt(x * x + y * y)
+          if (dist <= 6) {
+            const px = centerX + x
+            const py = centerY + y
+            if (px >= 0 && px < cols && py >= 0 && py < rows) {
+              const blend = Math.max(0, Math.min(stateCount - 1, Math.round((dist / 6) * (stateCount - 1))))
+              grid[py][px] = blend
+            }
+          }
+        }
+      }
+    } else {
+      // Seed with a lightweight glider formation for Conway
+      const glider = [
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [2, -1],
+        [1, -2],
+      ]
+      glider.forEach(([dx, dy]) => {
+        const px = centerX + dx
+        const py = centerY + dy
+        if (px >= 0 && px < cols && py >= 0 && py < rows) {
+          grid[py][px] = 1
+        }
+      })
+      // Add a small oscillator nearby
+      const blinker = [
+        [-4, 0],
+        [-3, 0],
+        [-2, 0],
+      ]
+      blinker.forEach(([dx, dy]) => {
+        const px = centerX + dx
+        const py = centerY + dy
+        if (px >= 0 && px < cols && py >= 0 && py < rows) {
+          grid[py][px] = 1
+        }
+      })
+    }
   }
 
-  for (let gen = 0; gen < 10; gen++) {
-    const newGrid = JSON.parse(JSON.stringify(grid))
+  const parseRule = (rule: string) => {
+    const match = rule.match(/B(\d+)\/S(\d+)/i)
+    if (!match) return { birth: [3], survival: [2, 3] }
+
+    const birthStr = match[1]
+    const survivalStr = match[2]
+
+    const birth = birthStr.split('').map((n) => Number.parseInt(n, 10)).filter((n) => !Number.isNaN(n))
+    const survival = survivalStr.split('').map((n) => Number.parseInt(n, 10)).filter((n) => !Number.isNaN(n))
+
+    return { birth, survival }
+  }
+
+  const { birth, survival } = parseRule(params.ruleSet)
+  const iterations = isCyclic ? 90 : 60
+
+  for (let gen = 0; gen < iterations; gen++) {
+    const newGrid = Array(rows)
+      .fill(null)
+      .map(() => Array(cols).fill(0))
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        let alive = 0
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (dx === 0 && dy === 0) continue
-            const ny = (y + dy + rows) % rows
-            const nx = (x + dx + cols) % cols
-            alive += grid[ny][nx] ? 1 : 0
-          }
-        }
+        if (isCyclic) {
+          const current = grid[y][x]
+          const target = (current + 1) % stateCount
+          let found = false
 
-        if (params.algorithm === "conway") {
-          newGrid[y][x] = (grid[y][x] && (alive === 2 || alive === 3)) || (!grid[y][x] && alive === 3) ? 1 : 0
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue
+              const ny = (y + dy + rows) % rows
+              const nx = (x + dx + cols) % cols
+              if (grid[ny][nx] === target) {
+                found = true
+                break
+              }
+            }
+            if (found) break
+          }
+
+          newGrid[y][x] = found ? target : current
+        } else {
+          let neighbors = 0
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue
+              const ny = (y + dy + rows) % rows
+              const nx = (x + dx + cols) % cols
+              neighbors += grid[ny][nx] ? 1 : 0
+            }
+          }
+
+          if (grid[y][x]) {
+            newGrid[y][x] = survival.includes(neighbors) ? 1 : 0
+          } else {
+            newGrid[y][x] = birth.includes(neighbors) ? 1 : 0
+          }
         }
       }
     }
+
     grid = newGrid
   }
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      ctx.fillStyle = grid[y][x] ? params.colorLive : params.colorDead
+      let color = params.colorDead
+
+      if (isCyclic) {
+        const state = grid[y][x]
+        const ratio = stateCount > 1 ? state / (stateCount - 1) : 0
+        color = blendColors(params.colorDead, params.colorLive, ratio)
+      } else {
+        color = grid[y][x] ? params.colorLive : params.colorDead
+      }
+
+      ctx.fillStyle = color
       ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize)
     }
   }
 }
 
-function drawFlowField(ctx: CanvasRenderingContext2D, width: number, height: number, params: FlowFieldParams) {
-  const perlin = new PerlinNoise()
+function blendColors(color1: string, color2: string, ratio: number): string {
+  const c1 = hexToRgb(color1)
+  const c2 = hexToRgb(color2)
+
+  const r = Math.round(c1.r + (c2.r - c1.r) * ratio)
+  const g = Math.round(c1.g + (c2.g - c1.g) * ratio)
+  const b = Math.round(c1.b + (c2.b - c1.b) * ratio)
+
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+async function drawFlowFieldAsync(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: FlowFieldParams,
+  renderId?: number,
+  activeWorkersRef?: React.MutableRefObject<Worker[]>
+) {
+  // Clear canvas
+  ctx.fillStyle = "#0a0a0a"
+  ctx.fillRect(0, 0, width, height)
+
+  // Check if Workers are supported
+  if (typeof Worker === 'undefined') {
+    console.warn('Web Workers not supported, falling back to single-threaded flow field')
+    drawFlowFieldSingleThreaded(ctx, width, height, params)
+    return
+  }
+
+  try {
+    const worker = new Worker('/flow-field-worker.js')
+    if (activeWorkersRef) {
+      activeWorkersRef.current.push(worker)
+    }
+
+    const timeout = setTimeout(() => {
+      worker.terminate()
+      if (activeWorkersRef) {
+        activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
+      }
+      throw new Error('Flow field worker timeout')
+    }, 10000) // 10 second timeout
+
+    const result = await new Promise((resolve, reject) => {
+      worker.onmessage = (e) => {
+        clearTimeout(timeout)
+        resolve(e.data)
+      }
+
+      worker.onerror = (error) => {
+        clearTimeout(timeout)
+        reject(error)
+      }
+
+      worker.postMessage({ width, height, params })
+    })
+
+    // Terminate worker
+    worker.terminate()
+    if (activeWorkersRef) {
+      activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
+    }
+
+    // Render the paths
+    const resultTyped = result as { paths: Array<Array<{ x: number; y: number }>> }
+    const { paths } = resultTyped
+    ctx.strokeStyle = "#a78bfa"
+    ctx.globalAlpha = params.opacity
+    ctx.lineWidth = params.lineWeight
+
+    for (const path of paths) {
+      if (path.length < 2) continue
+
+      ctx.beginPath()
+      ctx.moveTo(path[0].x, path[0].y)
+
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y)
+      }
+
+      ctx.stroke()
+    }
+
+    ctx.globalAlpha = 1
+
+  } catch (error) {
+    console.warn('Worker rendering failed, falling back to single-threaded:', error)
+    drawFlowFieldSingleThreaded(ctx, width, height, params)
+  }
+}
+
+function drawFlowFieldSingleThreaded(ctx: CanvasRenderingContext2D, width: number, height: number, params: FlowFieldParams) {
   ctx.fillStyle = "#0a0a0a"
   ctx.fillRect(0, 0, width, height)
 
   const particles: Array<{ x: number; y: number }> = []
-  for (let i = 0; i < params.particleCount; i++) {
+  for (let i = 0; i < Math.min(params.particleCount, 2000); i++) { // Limit for performance
     particles.push({ x: Math.random() * width, y: Math.random() * height })
   }
 
@@ -545,10 +776,11 @@ function drawFlowField(ctx: CanvasRenderingContext2D, width: number, height: num
     let y = particle.y
     ctx.moveTo(x, y)
 
-    for (let i = 0; i < 50; i++) {
-      const angle = perlin.noise(x * params.noiseScale, y * params.noiseScale) * Math.PI * 2
-      x += Math.cos(angle) * params.stepLength
-      y += Math.sin(angle) * params.stepLength
+    const steps = Math.min(params.stepLength, 100) // Limit steps for performance
+    for (let i = 0; i < steps; i++) {
+      const angle = perlinNoise.noise(x * params.noiseScale, y * params.noiseScale) * Math.PI * 2
+      x += Math.cos(angle) * 2
+      y += Math.sin(angle) * 2
 
       if (x < 0 || x > width || y < 0 || y > height) break
       ctx.lineTo(x, y)
@@ -560,7 +792,73 @@ function drawFlowField(ctx: CanvasRenderingContext2D, width: number, height: num
   ctx.globalAlpha = 1
 }
 
-function drawReactionDiffusion(
+async function drawReactionDiffusionAsync(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: ReactionDiffusionParams,
+  renderId?: number,
+  activeWorkersRef?: React.MutableRefObject<Worker[]>
+) {
+  // Check if Workers are supported
+  if (typeof Worker === 'undefined') {
+    console.warn('Web Workers not supported, falling back to single-threaded reaction-diffusion')
+    drawReactionDiffusionSingleThreaded(ctx, width, height, params)
+    return
+  }
+
+  try {
+    const worker = new Worker('/reaction-diffusion-worker.js')
+    if (activeWorkersRef) {
+      activeWorkersRef.current.push(worker)
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        worker.terminate()
+        if (activeWorkersRef) {
+          activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
+        }
+        reject(new Error('Reaction-diffusion worker timeout'))
+      }, 20000) // 20 second timeout (increased from 15)
+
+      worker.onmessage = (e) => {
+        clearTimeout(timeout)
+        // Check if worker sent an error
+        if (e.data.error) {
+          reject(new Error(e.data.error))
+        } else {
+          resolve(e.data)
+        }
+      }
+
+      worker.onerror = (error) => {
+        clearTimeout(timeout)
+        reject(error)
+      }
+
+      worker.postMessage({ width, height, params, currentFrame: Date.now() })
+    })
+
+    // Terminate worker
+    worker.terminate()
+    if (activeWorkersRef) {
+      activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
+    }
+
+    // Render the result
+    const resultTyped = result as { imageData: ArrayBuffer }
+    const { imageData } = resultTyped
+    const imgData = new ImageData(new Uint8ClampedArray(imageData), width, height)
+    ctx.putImageData(imgData, 0, 0)
+
+  } catch (error) {
+    console.warn('Worker rendering failed, falling back to single-threaded:', error)
+    drawReactionDiffusionSingleThreaded(ctx, width, height, params)
+  }
+}
+
+function drawReactionDiffusionSingleThreaded(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -577,33 +875,118 @@ function drawReactionDiffusion(
     .fill(null)
     .map(() => Array(cols).fill(0))
 
-  for (let y = Math.floor(rows / 2) - 5; y < Math.floor(rows / 2) + 5; y++) {
-    for (let x = Math.floor(cols / 2) - 5; x < Math.floor(cols / 2) + 5; x++) {
-      if (y >= 0 && y < rows && x >= 0 && x < cols) {
-        v[y][x] = 1
+  const seedCircle = (cx: number, cy: number, radius: number, strength = 1) => {
+    for (let y = -radius; y <= radius; y++) {
+      for (let x = -radius; x <= radius; x++) {
+        const px = cx + x
+        const py = cy + y
+        if (px >= 0 && px < cols && py >= 0 && py < rows && x * x + y * y <= radius * radius) {
+          v[py][px] = strength
+          u[py][px] = Math.max(0, 1 - strength)
+        }
       }
     }
   }
 
-  const du = 0.2082
-  const dv = 0.105
+  // Gentle noise baseline
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      u[y][x] = 1 - Math.random() * 0.05
+      v[y][x] = Math.random() * 0.05
+    }
+  }
+
+  const centerX = Math.floor(cols / 2)
+  const centerY = Math.floor(rows / 2)
+
+  switch (params.preset) {
+    case "stripes":
+      for (let x = 0; x < cols; x++) {
+        if (x % 12 < 6) {
+          for (let y = 0; y < rows; y++) {
+            v[y][x] = 0.9
+            u[y][x] = 0.1
+          }
+        }
+      }
+      break
+    case "labyrinth":
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if ((x ^ y) % 7 === 0) {
+            v[y][x] = 0.8
+            u[y][x] = 0.2
+          }
+        }
+      }
+      break
+    case "worms":
+      for (let i = 0; i < 20; i++) {
+        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 4, 0.9)
+      }
+      break
+    case "spots-stripes":
+      for (let x = 0; x < cols; x++) {
+        if (x % 20 < 10) {
+          for (let y = 0; y < rows; y++) {
+            if (y % 8 < 4) {
+              v[y][x] = 0.85
+              u[y][x] = 0.15
+            }
+          }
+        }
+      }
+      for (let i = 0; i < 30; i++) {
+        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 3, 0.95)
+      }
+      break
+    case "moving-spots":
+      for (let i = 0; i < 40; i++) {
+        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 3, 1)
+      }
+      break
+    case "spots":
+    default:
+      for (let i = 0; i < 60; i++) {
+        seedCircle(centerX + Math.floor((Math.random() - 0.5) * cols * 0.7), centerY + Math.floor((Math.random() - 0.5) * rows * 0.7), 3 + Math.floor(Math.random() * 4), 1)
+      }
+      break
+  }
+
+  // Gray-Scott parameters
+  const Du = 0.16
+  const Dv = 0.08
+  const F = params.feedRate
+  const k = params.killRate
   const dt = 1
 
-  for (let t = 0; t < 50; t++) {
+  // Run a moderate number of iterations to approximate the worker result
+  const iterations = 80 + Math.floor(params.speed * 120)
+
+  for (let t = 0; t < iterations; t++) {
     const newU = u.map((r) => [...r])
     const newV = v.map((r) => [...r])
 
     for (let y = 1; y < rows - 1; y++) {
       for (let x = 1; x < cols - 1; x++) {
-        const uLap = (u[y][x - 1] + u[y][x + 1] + u[y - 1][x] + u[y + 1][x] - 4 * u[y][x]) / 4
-        const vLap = (v[y][x - 1] + v[y][x + 1] + v[y - 1][x] + v[y + 1][x] - 4 * v[y][x]) / 4
+        // Laplacian
+        const laplacianU =
+          -u[y][x] +
+          (u[y-1][x] + u[y+1][x] + u[y][x-1] + u[y][x+1]) * 0.2 +
+          (u[y-1][x-1] + u[y-1][x+1] + u[y+1][x-1] + u[y+1][x+1]) * 0.05
 
-        newU[y][x] = u[y][x] + (du * uLap - u[y][x] * v[y][x] * v[y][x] + params.feedRate * (1 - u[y][x])) * dt
-        newV[y][x] =
-          v[y][x] + (dv * vLap + u[y][x] * v[y][x] * v[y][x] - (params.killRate + params.feedRate) * v[y][x]) * dt
+        const laplacianV =
+          -v[y][x] +
+          (v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1]) * 0.2 +
+          (v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1]) * 0.05
 
-        newU[y][x] = Math.max(0, Math.min(1, newU[y][x]))
-        newV[y][x] = Math.max(0, Math.min(1, newV[y][x]))
+        // Gray-Scott equations
+        const uvv = u[y][x] * v[y][x] * v[y][x]
+        const du = Du * laplacianU - uvv + F * (1 - u[y][x])
+        const dv = Dv * laplacianV + uvv - (F + k) * v[y][x]
+
+        newU[y][x] = Math.max(0, Math.min(1, u[y][x] + du * dt))
+        newV[y][x] = Math.max(0, Math.min(1, v[y][x] + dv * dt))
       }
     }
 
@@ -616,12 +999,29 @@ function drawReactionDiffusion(
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      const val = Math.floor((1 - v[y][x]) * 255)
-      const idx = (y * scale * width + x * scale) * 4
-      data[idx] = val
-      data[idx + 1] = val
-      data[idx + 2] = val
-      data[idx + 3] = 255
+      const uVal = u[y][x]
+      const vVal = v[y][x]
+
+      // Color based on chemical concentrations
+      const r = Math.floor((1 - vVal) * 255)
+      const g = Math.floor((uVal - vVal + 1) * 128)
+      const b = Math.floor(vVal * 255)
+
+      // Fill the scaled area
+      for (let dy = 0; dy < scale; dy++) {
+        for (let dx = 0; dx < scale; dx++) {
+          const py = y * scale + dy
+          const px = x * scale + dx
+
+          if (py < height && px < width) {
+            const idx = (py * width + px) * 4
+            data[idx] = Math.max(0, Math.min(255, r))
+            data[idx + 1] = Math.max(0, Math.min(255, g))
+            data[idx + 2] = Math.max(0, Math.min(255, b))
+            data[idx + 3] = 255
+          }
+        }
+      }
     }
   }
 
