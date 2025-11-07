@@ -9,7 +9,6 @@ import { PerlinNoiseControls } from "./perlin-noise-controls"
 import { StrangeAttractorControls } from "./strange-attractor-controls"
 import { CellularAutomataControls } from "./cellular-automata-controls"
 import { FlowFieldControls } from "./flow-field-controls"
-import { ReactionDiffusionControls } from "./reaction-diffusion-controls"
 import type {
   Mode,
   ChaosGameParams,
@@ -157,13 +156,6 @@ export function RightSidebar({
             </div>
           )}
 
-          {mode === "reaction-diffusion" && (
-            <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Morphic Bloom</h3>
-              <p className="text-xs text-muted-foreground mb-3">Gray-Scott reaction-diffusion pattern generation</p>
-              <ReactionDiffusionControls params={reactionDiffusionParams} setParams={setReactionDiffusionParams} />
-            </div>
-          )}
 
           {/* Canvas settings always visible */}
           <div className="border-t-2 border-foreground/10 pt-4">

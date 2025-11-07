@@ -57,12 +57,6 @@ export interface PerlinNoiseParams {
   colorPalette: ColorStop[]
 }
 
-export interface ReactionDiffusionParams {
-  preset: "spots" | "stripes" | "labyrinth" | "worms" | "spots-stripes" | "moving-spots"
-  feedRate: number
-  killRate: number
-  speed: number
-}
 
 export interface StrangeAttractorParams {
   type: "lorenz" | "aizawa" | "dejong"
@@ -100,7 +94,6 @@ export type Mode =
   | "strange-attractor"
   | "cellular-automata"
   | "flow-field"
-  | "reaction-diffusion"
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("gradient")
@@ -191,13 +184,6 @@ export default function Home() {
     opacity: 0.5,
   })
 
-  const [reactionDiffusionParams, setReactionDiffusionParams] = useState<ReactionDiffusionParams>({
-    preset: "spots",
-    feedRate: 0.055,
-    killRate: 0.062,
-    speed: 1,
-  })
-
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
@@ -250,8 +236,6 @@ export default function Home() {
               setCellularAutomataParams={setCellularAutomataParams}
               flowFieldParams={flowFieldParams}
               setFlowFieldParams={setFlowFieldParams}
-              reactionDiffusionParams={reactionDiffusionParams}
-              setReactionDiffusionParams={setReactionDiffusionParams}
             />
           </div>
 
@@ -279,7 +263,6 @@ export default function Home() {
             strangeAttractorParams={strangeAttractorParams}
             cellularAutomataParams={cellularAutomataParams}
             flowFieldParams={flowFieldParams}
-            reactionDiffusionParams={reactionDiffusionParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
           />
@@ -320,8 +303,6 @@ export default function Home() {
               setCellularAutomataParams={setCellularAutomataParams}
               flowFieldParams={flowFieldParams}
               setFlowFieldParams={setFlowFieldParams}
-              reactionDiffusionParams={reactionDiffusionParams}
-              setReactionDiffusionParams={setReactionDiffusionParams}
               canvasBackgrounds={canvasBackgrounds}
               setCanvasBackgrounds={setCanvasBackgrounds}
               selectedBgIndex={selectedBgIndex}

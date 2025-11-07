@@ -14,7 +14,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface PreviewAreaProps {
@@ -32,7 +31,6 @@ interface PreviewAreaProps {
   strangeAttractorParams?: StrangeAttractorParams
   cellularAutomataParams?: CellularAutomataParams
   flowFieldParams?: FlowFieldParams
-  reactionDiffusionParams?: ReactionDiffusionParams
 }
 
 export function PreviewArea({
@@ -50,7 +48,6 @@ export function PreviewArea({
   strangeAttractorParams,
   cellularAutomataParams,
   flowFieldParams,
-  reactionDiffusionParams,
 }: PreviewAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const bgColor =
@@ -145,7 +142,6 @@ export function PreviewArea({
           strangeAttractorParams={strangeAttractorParams}
           cellularAutomataParams={cellularAutomataParams}
           flowFieldParams={flowFieldParams}
-          reactionDiffusionParams={reactionDiffusionParams}
         />
         {showCenterHandle && mode === "gradient" && (
           <GradientCenterHandle gradient={gradient} setGradient={setGradient} />

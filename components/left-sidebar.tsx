@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, PaintBucket, Sparkles, Maximize, Waves, Droplets, Orbit, Grid3x3, Wind } from "lucide-react"
+import { FileText, PaintBucket, Sparkles, Maximize, Waves, Orbit, Grid3x3, Wind } from "lucide-react"
 import type {
   Mode,
   ChaosGameParams,
@@ -82,11 +82,6 @@ export function LeftSidebar({
       id: "perlin-noise" as const,
       label: "Noise Canvas",
       icon: Waves,
-    },
-    {
-      id: "reaction-diffusion" as const,
-      label: "Morphic Bloom",
-      icon: Droplets,
     },
     {
       id: "strange-attractor" as const,

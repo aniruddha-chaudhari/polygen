@@ -11,7 +11,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface CanvasProps {
@@ -24,7 +23,6 @@ interface CanvasProps {
   strangeAttractorParams?: StrangeAttractorParams
   cellularAutomataParams?: CellularAutomataParams
   flowFieldParams?: FlowFieldParams
-  reactionDiffusionParams?: ReactionDiffusionParams
 }
 
 const templates = [
@@ -48,7 +46,6 @@ export function Canvas({
   strangeAttractorParams,
   cellularAutomataParams,
   flowFieldParams,
-  reactionDiffusionParams,
 }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isRenderingRef = useRef(false)
@@ -185,21 +182,6 @@ export function Canvas({
         }, 150)
         return
       }
-    } else if (mode === "reaction-diffusion" && reactionDiffusionParams) {
-      // Reaction-diffusion rendering is handled asynchronously with debouncing
-      if (mode === "reaction-diffusion") {
-        renderTimeoutRef.current = setTimeout(async () => {
-          try {
-            await drawReactionDiffusionAsync(ctx, canvas.width, canvas.height, reactionDiffusionParams, currentRenderId, activeWorkersRef)
-          } catch (err) {
-            if (err instanceof Error && err.message !== 'Render cancelled') {
-              console.error('Reaction-diffusion render error:', err)
-            }
-          }
-        }, 150)
-        return
-      }
-    }
 
     return () => {
       if (renderTimeoutRef.current) {
@@ -792,238 +774,4 @@ function drawFlowFieldSingleThreaded(ctx: CanvasRenderingContext2D, width: numbe
   ctx.globalAlpha = 1
 }
 
-async function drawReactionDiffusionAsync(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  params: ReactionDiffusionParams,
-  renderId?: number,
-  activeWorkersRef?: React.MutableRefObject<Worker[]>
-) {
-  // Check if Workers are supported
-  if (typeof Worker === 'undefined') {
-    console.warn('Web Workers not supported, falling back to single-threaded reaction-diffusion')
-    drawReactionDiffusionSingleThreaded(ctx, width, height, params)
-    return
-  }
 
-  try {
-    const worker = new Worker('/reaction-diffusion-worker.js')
-    if (activeWorkersRef) {
-      activeWorkersRef.current.push(worker)
-    }
-
-    const result = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        worker.terminate()
-        if (activeWorkersRef) {
-          activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
-        }
-        reject(new Error('Reaction-diffusion worker timeout'))
-      }, 20000) // 20 second timeout (increased from 15)
-
-      worker.onmessage = (e) => {
-        clearTimeout(timeout)
-        // Check if worker sent an error
-        if (e.data.error) {
-          reject(new Error(e.data.error))
-        } else {
-          resolve(e.data)
-        }
-      }
-
-      worker.onerror = (error) => {
-        clearTimeout(timeout)
-        reject(error)
-      }
-
-      worker.postMessage({ width, height, params, currentFrame: Date.now() })
-    })
-
-    // Terminate worker
-    worker.terminate()
-    if (activeWorkersRef) {
-      activeWorkersRef.current = activeWorkersRef.current.filter(w => w !== worker)
-    }
-
-    // Render the result
-    const resultTyped = result as { imageData: ArrayBuffer }
-    const { imageData } = resultTyped
-    const imgData = new ImageData(new Uint8ClampedArray(imageData), width, height)
-    ctx.putImageData(imgData, 0, 0)
-
-  } catch (error) {
-    console.warn('Worker rendering failed, falling back to single-threaded:', error)
-    drawReactionDiffusionSingleThreaded(ctx, width, height, params)
-  }
-}
-
-function drawReactionDiffusionSingleThreaded(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  params: ReactionDiffusionParams,
-) {
-  const scale = 4
-  const cols = Math.floor(width / scale)
-  const rows = Math.floor(height / scale)
-
-  let u = Array(rows)
-    .fill(null)
-    .map(() => Array(cols).fill(1))
-  let v = Array(rows)
-    .fill(null)
-    .map(() => Array(cols).fill(0))
-
-  const seedCircle = (cx: number, cy: number, radius: number, strength = 1) => {
-    for (let y = -radius; y <= radius; y++) {
-      for (let x = -radius; x <= radius; x++) {
-        const px = cx + x
-        const py = cy + y
-        if (px >= 0 && px < cols && py >= 0 && py < rows && x * x + y * y <= radius * radius) {
-          v[py][px] = strength
-          u[py][px] = Math.max(0, 1 - strength)
-        }
-      }
-    }
-  }
-
-  // Gentle noise baseline
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      u[y][x] = 1 - Math.random() * 0.05
-      v[y][x] = Math.random() * 0.05
-    }
-  }
-
-  const centerX = Math.floor(cols / 2)
-  const centerY = Math.floor(rows / 2)
-
-  switch (params.preset) {
-    case "stripes":
-      for (let x = 0; x < cols; x++) {
-        if (x % 12 < 6) {
-          for (let y = 0; y < rows; y++) {
-            v[y][x] = 0.9
-            u[y][x] = 0.1
-          }
-        }
-      }
-      break
-    case "labyrinth":
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          if ((x ^ y) % 7 === 0) {
-            v[y][x] = 0.8
-            u[y][x] = 0.2
-          }
-        }
-      }
-      break
-    case "worms":
-      for (let i = 0; i < 20; i++) {
-        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 4, 0.9)
-      }
-      break
-    case "spots-stripes":
-      for (let x = 0; x < cols; x++) {
-        if (x % 20 < 10) {
-          for (let y = 0; y < rows; y++) {
-            if (y % 8 < 4) {
-              v[y][x] = 0.85
-              u[y][x] = 0.15
-            }
-          }
-        }
-      }
-      for (let i = 0; i < 30; i++) {
-        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 3, 0.95)
-      }
-      break
-    case "moving-spots":
-      for (let i = 0; i < 40; i++) {
-        seedCircle(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), 3, 1)
-      }
-      break
-    case "spots":
-    default:
-      for (let i = 0; i < 60; i++) {
-        seedCircle(centerX + Math.floor((Math.random() - 0.5) * cols * 0.7), centerY + Math.floor((Math.random() - 0.5) * rows * 0.7), 3 + Math.floor(Math.random() * 4), 1)
-      }
-      break
-  }
-
-  // Gray-Scott parameters
-  const Du = 0.16
-  const Dv = 0.08
-  const F = params.feedRate
-  const k = params.killRate
-  const dt = 1
-
-  // Run a moderate number of iterations to approximate the worker result
-  const iterations = 80 + Math.floor(params.speed * 120)
-
-  for (let t = 0; t < iterations; t++) {
-    const newU = u.map((r) => [...r])
-    const newV = v.map((r) => [...r])
-
-    for (let y = 1; y < rows - 1; y++) {
-      for (let x = 1; x < cols - 1; x++) {
-        // Laplacian
-        const laplacianU =
-          -u[y][x] +
-          (u[y-1][x] + u[y+1][x] + u[y][x-1] + u[y][x+1]) * 0.2 +
-          (u[y-1][x-1] + u[y-1][x+1] + u[y+1][x-1] + u[y+1][x+1]) * 0.05
-
-        const laplacianV =
-          -v[y][x] +
-          (v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1]) * 0.2 +
-          (v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1]) * 0.05
-
-        // Gray-Scott equations
-        const uvv = u[y][x] * v[y][x] * v[y][x]
-        const du = Du * laplacianU - uvv + F * (1 - u[y][x])
-        const dv = Dv * laplacianV + uvv - (F + k) * v[y][x]
-
-        newU[y][x] = Math.max(0, Math.min(1, u[y][x] + du * dt))
-        newV[y][x] = Math.max(0, Math.min(1, v[y][x] + dv * dt))
-      }
-    }
-
-    u = newU
-    v = newV
-  }
-
-  const imageData = ctx.createImageData(width, height)
-  const data = imageData.data
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const uVal = u[y][x]
-      const vVal = v[y][x]
-
-      // Color based on chemical concentrations
-      const r = Math.floor((1 - vVal) * 255)
-      const g = Math.floor((uVal - vVal + 1) * 128)
-      const b = Math.floor(vVal * 255)
-
-      // Fill the scaled area
-      for (let dy = 0; dy < scale; dy++) {
-        for (let dx = 0; dx < scale; dx++) {
-          const py = y * scale + dy
-          const px = x * scale + dx
-
-          if (py < height && px < width) {
-            const idx = (py * width + px) * 4
-            data[idx] = Math.max(0, Math.min(255, r))
-            data[idx + 1] = Math.max(0, Math.min(255, g))
-            data[idx + 2] = Math.max(0, Math.min(255, b))
-            data[idx + 3] = 255
-          }
-        }
-      }
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0)
-}
