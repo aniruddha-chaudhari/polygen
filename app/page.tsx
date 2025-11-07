@@ -6,14 +6,57 @@ import { RightSidebar } from "@/components/right-sidebar"
 import { PreviewArea } from "@/components/preview-area"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { Button } from "@/components/retroui/Button"
-import { Text } from "@/components/retroui/Text"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+
+export interface ColorStop {
+  color: string
+  position: number
+  alpha: number
+}
+
+export interface GradientState {
+  type: "linear" | "radial" | "conic" | "mesh" | "repeating-linear" | "repeating-radial" | "repeating-conic"
+  colorStops: ColorStop[]
+  angle: number
+  centerX: number
+  centerY: number
+  shape: "circle" | "ellipse"
+  shapeRatio: number
+  meshGrid: string[][] // 3x3 grid
+  meshSpread: number
+  repeatSize: number
+  noiseEnabled: boolean
+  noiseAmount: number
+  noiseType: "smooth" | "harsh"
+}
+
+const defaultGradientState: GradientState = {
+  type: "linear",
+  colorStops: [
+    { color: "#a78bfa", position: 0, alpha: 1 },
+    { color: "#ec4899", position: 100, alpha: 1 },
+  ],
+  angle: 135,
+  centerX: 50,
+  centerY: 50,
+  shape: "circle",
+  shapeRatio: 1,
+  meshGrid: [
+    ["#ff0000", "#00ff00", "#0000ff"],
+    ["#ffff00", "#ff00ff", "#00ffff"],
+    ["#ff8800", "#00ff88", "#8800ff"],
+  ],
+  meshSpread: 50,
+  repeatSize: 100,
+  noiseEnabled: false,
+  noiseAmount: 0,
+  noiseType: "smooth",
+}
 
 export default function Home() {
   const [mode, setMode] = useState<"template" | "gradient" | "fractal">("gradient")
   const [selectedTemplate, setSelectedTemplate] = useState(0)
-  const [gradientColors, setGradientColors] = useState(["#a78bfa", "#ec4899"])
-  const [gradientAngle, setGradientAngle] = useState(135)
+  const [gradient, setGradient] = useState<GradientState>(defaultGradientState)
   const [canvasBackgrounds, setCanvasBackgrounds] = useState<string[]>([])
   const [selectedBgIndex, setSelectedBgIndex] = useState<number | null>(null)
   const [fractalParams, setFractalParams] = useState({
@@ -59,10 +102,8 @@ export default function Home() {
               setMode={setMode}
               selectedTemplate={selectedTemplate}
               setSelectedTemplate={setSelectedTemplate}
-              gradientColors={gradientColors}
-              setGradientColors={setGradientColors}
-              gradientAngle={gradientAngle}
-              setGradientAngle={setGradientAngle}
+              gradient={gradient}
+              setGradient={setGradient}
               fractalParams={fractalParams}
               setFractalParams={setFractalParams}
             />
@@ -82,8 +123,7 @@ export default function Home() {
           <PreviewArea
             mode={mode}
             selectedTemplate={selectedTemplate}
-            gradientColors={gradientColors}
-            gradientAngle={gradientAngle}
+            gradient={gradient}
             fractalParams={fractalParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
@@ -107,12 +147,11 @@ export default function Home() {
           >
             <RightSidebar
               mode={mode}
+              setMode={setMode}
               selectedTemplate={selectedTemplate}
               setSelectedTemplate={setSelectedTemplate}
-              gradientColors={gradientColors}
-              setGradientColors={setGradientColors}
-              gradientAngle={gradientAngle}
-              setGradientAngle={setGradientAngle}
+              gradient={gradient}
+              setGradient={setGradient}
               fractalParams={fractalParams}
               setFractalParams={setFractalParams}
               canvasBackgrounds={canvasBackgrounds}

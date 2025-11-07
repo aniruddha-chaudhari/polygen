@@ -7,10 +7,8 @@ interface LeftSidebarProps {
   setMode: (mode: "template" | "gradient" | "fractal") => void
   selectedTemplate: number
   setSelectedTemplate: (id: number) => void
-  gradientColors: string[]
-  setGradientColors: (colors: string[]) => void
-  gradientAngle: number
-  setGradientAngle: (angle: number) => void
+  gradient: any
+  setGradient: (gradient: any) => void
   fractalParams: any
   setFractalParams: (params: any) => void
 }
@@ -20,10 +18,8 @@ export function LeftSidebar({
   setMode,
   selectedTemplate,
   setSelectedTemplate,
-  gradientColors,
-  setGradientColors,
-  gradientAngle,
-  setGradientAngle,
+  gradient,
+  setGradient,
   fractalParams,
   setFractalParams,
 }: LeftSidebarProps) {

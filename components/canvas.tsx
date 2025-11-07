@@ -1,12 +1,12 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useCallback } from "react"
+import type { GradientState } from "@/app/page"
 
 interface CanvasProps {
   mode: "template" | "gradient" | "fractal"
   selectedTemplate: number
-  gradientColors: string[]
-  gradientAngle: number
+  gradient: GradientState
   fractalParams: any
 }
 
@@ -19,8 +19,51 @@ const templates = [
   { name: "Sky", colors: ["#87ceeb", "#e0f6ff"] },
 ]
 
-export function Canvas({ mode, selectedTemplate, gradientColors, gradientAngle, fractalParams }: CanvasProps) {
+export function Canvas({ mode, selectedTemplate, gradient, fractalParams }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const renderGradient = useCallback(
+    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      let canvasGradient: CanvasGradient | null = null
+
+      const centerX = (gradient.centerX / 100) * width
+      const centerY = (gradient.centerY / 100) * height
+      const maxRadius = Math.sqrt(width * width + height * height) / 2
+
+      if (gradient.type === "linear" || gradient.type === "repeating-linear") {
+        const angleRad = (gradient.angle * Math.PI) / 180
+        const startX = width / 2 - Math.cos(angleRad) * maxRadius
+        const startY = height / 2 - Math.sin(angleRad) * maxRadius
+        const endX = width / 2 + Math.cos(angleRad) * maxRadius
+        const endY = height / 2 + Math.sin(angleRad) * maxRadius
+        canvasGradient = ctx.createLinearGradient(startX, startY, endX, endY)
+      } else if (gradient.type === "radial" || gradient.type === "repeating-radial") {
+        const radius0 = 0
+        const radius1 = maxRadius
+        canvasGradient = ctx.createRadialGradient(centerX, centerY, radius0, centerX, centerY, radius1)
+      } else if (gradient.type === "conic" || gradient.type === "repeating-conic") {
+        canvasGradient = ctx.createConicGradient((gradient.angle * Math.PI) / 180, centerX, centerY)
+      }
+
+      if (canvasGradient) {
+        // Add color stops sorted by position
+        const sortedStops = [...gradient.colorStops].sort((a, b) => a.position - b.position)
+        sortedStops.forEach((stop) => {
+          const rgba = hexToRgba(stop.color, stop.alpha)
+          canvasGradient!.addColorStop(stop.position / 100, rgba)
+        })
+
+        ctx.fillStyle = canvasGradient
+        ctx.fillRect(0, 0, width, height)
+
+        // Apply noise if enabled
+        if (gradient.noiseEnabled && gradient.noiseAmount > 0) {
+          applyNoise(ctx, width, height, gradient.noiseAmount, gradient.noiseType)
+        }
+      }
+    },
+    [gradient],
+  )
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -40,40 +83,55 @@ export function Canvas({ mode, selectedTemplate, gradientColors, gradientAngle, 
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, canvas.width, canvas.height)
     } else if (mode === "gradient") {
-      // Validate colors and provide fallbacks
-      const validColors = gradientColors.map((color, index) => {
-        if (color && color.trim() !== '') {
-          // Test if color is valid by setting it temporarily
-          const testDiv = document.createElement('div')
-          testDiv.style.color = color
-          if (testDiv.style.color !== '') return color
-        }
-        // Fallback colors
-        return index === 0 ? '#a78bfa' : '#ec4899'
-      })
-
-      // Calculate gradient start and end points based on angle
-      const angleRad = (gradientAngle * Math.PI) / 180
-      const centerX = canvas.width / 2
-      const centerY = canvas.height / 2
-      const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY) * 2
-
-      const startX = centerX - Math.cos(angleRad) * maxDistance
-      const startY = centerY - Math.sin(angleRad) * maxDistance
-      const endX = centerX + Math.cos(angleRad) * maxDistance
-      const endY = centerY + Math.sin(angleRad) * maxDistance
-
-      const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
-      gradient.addColorStop(0, validColors[0])
-      gradient.addColorStop(1, validColors[1])
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      renderGradient(ctx, canvas.width, canvas.height)
     } else if (mode === "fractal") {
       drawFractal(ctx, canvas.width, canvas.height, fractalParams)
     }
-  }, [mode, selectedTemplate, gradientColors, gradientAngle, fractalParams])
+  }, [mode, selectedTemplate, gradient, fractalParams, renderGradient])
 
   return <canvas ref={canvasRef} className="w-full h-full" crossOrigin="anonymous" />
+}
+
+function hexToRgba(hex: string, alpha = 1): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (result) {
+    const r = Number.parseInt(result[1], 16)
+    const g = Number.parseInt(result[2], 16)
+    const b = Number.parseInt(result[3], 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+  return "rgba(0, 0, 0, 1)"
+}
+
+function applyNoise(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  amount: number,
+  type: "smooth" | "harsh",
+) {
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const data = imageData.data
+
+  if (type === "harsh") {
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = Math.random() * 255 * amount
+      data[i] += noise // R
+      data[i + 1] += noise // G
+      data[i + 2] += noise // B
+    }
+  } else {
+    // Smooth noise using gradient-based approach
+    for (let i = 0; i < data.length; i += 4) {
+      const seed = Math.random() * 2 - 1
+      const noise = seed * 255 * amount * 0.5
+      data[i] += noise
+      data[i + 1] += noise
+      data[i + 2] += noise
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
 }
 
 function drawFractal(ctx: CanvasRenderingContext2D, width: number, height: number, params: any) {

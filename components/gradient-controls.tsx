@@ -1,113 +1,234 @@
 "use client"
-import { Input } from "@/components/retroui/Input"
-import { ColorPicker } from "@/components/retroui/ColorPicker"
-import { useState, useEffect, useCallback } from "react"
 
-// Helper function to validate if a string is a valid CSS color
-function isValidColor(color: string): boolean {
-  if (!color || color.trim() === '') return false
-
-  // Check if we're on the client side (browser environment)
-  if (typeof window === 'undefined' || !document) return true
-
-  // Create a temporary element to test the color
-  const testElement = document.createElement('div')
-  testElement.style.color = color
-  return testElement.style.color !== ''
-}
-
-// Fallback colors for invalid inputs
-const FALLBACK_COLORS = ['#a78bfa', '#ec4899']
+import { useState } from "react"
+import { GradientColorStops } from "./gradient-color-stops"
+import type { GradientState } from "@/app/page"
 
 interface GradientControlsProps {
-  colors: string[]
-  setColors: (colors: string[]) => void
-  angle: number
-  setAngle: (angle: number) => void
+  gradient: GradientState
+  setGradient: (gradient: GradientState) => void
 }
 
-export function GradientControls({ colors, setColors, angle, setAngle }: GradientControlsProps) {
-  // Local state for text inputs - allows typing without affecting parent state
-  const [inputValues, setInputValues] = useState(colors)
+export function GradientControls({ gradient, setGradient }: GradientControlsProps) {
+  const [selectedTab, setSelectedTab] = useState<"basic" | "advanced">("basic")
 
-  // Sync input values when colors prop changes
-  useEffect(() => {
-    setInputValues(colors)
-  }, [colors])
-
-  const handleColorChange = useCallback((index: number, newColor: string) => {
-    // Only update state if the new color is valid
-    if (isValidColor(newColor)) {
-      const newColors = [...colors]
-      newColors[index] = newColor
-      setColors(newColors)
-    }
-  }, [colors, setColors])
-
-  // Create stable callbacks for each color index
-  const handleColor0Change = useCallback((color: string) => handleColorChange(0, color), [handleColorChange])
-  const handleColor1Change = useCallback((color: string) => handleColorChange(1, color), [handleColorChange])
-
-  const handleTextInputChange = (index: number, newValue: string) => {
-    // Update local input state immediately
-    const newInputValues = [...inputValues]
-    newInputValues[index] = newValue
-    setInputValues(newInputValues)
-
-    // Only update parent state if valid
-    if (isValidColor(newValue)) {
-      const newColors = [...colors]
-      newColors[index] = newValue
-      setColors(newColors)
-    }
+  const handleTypeChange = (type: GradientState["type"]) => {
+    setGradient({ ...gradient, type })
   }
 
-  // For display, use the current valid colors (don't change them until valid input)
-  const displayColors = colors.map((color, index) =>
-    isValidColor(color) ? color : FALLBACK_COLORS[index % FALLBACK_COLORS.length]
-  )
-
   return (
-    <div className="space-y-6">
-      {/* Color stops */}
-      {[0, 1].map((index) => (
-        <div key={index} className="space-y-3">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-            {index === 0 ? "Start" : "End"} Color
-          </label>
-          <div className="flex gap-3 items-center">
-            <ColorPicker
-              value={displayColors[index]}
-              onChange={index === 0 ? handleColor0Change : handleColor1Change}
-            />
-            <div className="flex-1">
-              <Input
-                type="text"
-                value={inputValues[index]}
-                onChange={(e) => handleTextInputChange(index, e.target.value)}
-                className="h-9 text-sm font-mono bg-muted text-foreground border-border"
-              />
-            </div>
-          </div>
+    <div className="space-y-4">
+      {/* Gradient Type Selector */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+          Gradient Type
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {["linear", "radial", "conic", "mesh"].map((type) => (
+            <button
+              key={type}
+              onClick={() => handleTypeChange(type as GradientState["type"])}
+              className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded border-2 transition-colors ${
+                gradient.type === type
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-foreground/10 bg-muted text-muted-foreground hover:border-foreground/30"
+              }`}
+            >
+              {type}
+            </button>
+          ))}
         </div>
-      ))}
-
-      {/* Gradient angle */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Angle</label>
-          <span className="text-xs font-mono text-primary">{angle}°</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="360"
-          value={angle}
-          onChange={(e) => setAngle(Number(e.target.value))}
-          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-        />
       </div>
 
+      {/* Tabs for Basic/Advanced */}
+      <div className="flex gap-2 border-b-2 border-foreground/10">
+        {["basic", "advanced"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSelectedTab(tab as "basic" | "advanced")}
+            className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors ${
+              selectedTab === tab
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Basic Controls */}
+      {selectedTab === "basic" && (
+        <div className="space-y-4">
+          <GradientColorStops
+            colorStops={gradient.colorStops}
+            setColorStops={(stops) => setGradient({ ...gradient, colorStops: stops })}
+          />
+
+          {/* Angle for Linear */}
+          {(gradient.type === "linear" || gradient.type === "repeating-linear") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Angle</label>
+                <span className="text-xs font-mono text-primary">{gradient.angle}°</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="360"
+                value={gradient.angle}
+                onChange={(e) => setGradient({ ...gradient, angle: Number(e.target.value) })}
+                className="w-full h-2 bg-muted rounded accent-primary"
+              />
+            </div>
+          )}
+
+          {/* Center Position for Radial/Conic */}
+          {(gradient.type === "radial" ||
+            gradient.type === "conic" ||
+            gradient.type === "repeating-radial" ||
+            gradient.type === "repeating-conic") && (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Center X
+                  </label>
+                  <span className="text-xs font-mono text-primary">{gradient.centerX}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={gradient.centerX}
+                  onChange={(e) => setGradient({ ...gradient, centerX: Number(e.target.value) })}
+                  className="w-full h-2 bg-muted rounded accent-primary"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Center Y
+                  </label>
+                  <span className="text-xs font-mono text-primary">{gradient.centerY}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={gradient.centerY}
+                  onChange={(e) => setGradient({ ...gradient, centerY: Number(e.target.value) })}
+                  className="w-full h-2 bg-muted rounded accent-primary"
+                />
+              </div>
+
+              {gradient.type === "conic" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Start Angle
+                    </label>
+                    <span className="text-xs font-mono text-primary">{gradient.angle}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={gradient.angle}
+                    onChange={(e) => setGradient({ ...gradient, angle: Number(e.target.value) })}
+                    className="w-full h-2 bg-muted rounded accent-primary"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Shape for Radial */}
+          {(gradient.type === "radial" || gradient.type === "repeating-radial") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shape</label>
+                <span className="text-xs font-mono text-primary">{gradient.shape}</span>
+              </div>
+              <div className="flex gap-2">
+                {["circle", "ellipse"].map((shape) => (
+                  <button
+                    key={shape}
+                    onClick={() => setGradient({ ...gradient, shape: shape as "circle" | "ellipse" })}
+                    className={`flex-1 px-3 py-2 text-xs font-semibold uppercase rounded border-2 transition-colors ${
+                      gradient.shape === shape
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-foreground/10 bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {shape}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Advanced Controls */}
+      {selectedTab === "advanced" && (
+        <div className="space-y-4 p-3 bg-muted rounded border border-foreground/10">
+          {/* Noise Controls */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">
+              <input
+                type="checkbox"
+                checked={gradient.noiseEnabled}
+                onChange={(e) => setGradient({ ...gradient, noiseEnabled: e.target.checked })}
+                className="w-4 h-4 cursor-pointer"
+              />
+              Add Grain
+            </label>
+          </div>
+
+          {gradient.noiseEnabled && (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount</label>
+                  <span className="text-xs font-mono text-primary">{Math.round(gradient.noiseAmount * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={gradient.noiseAmount}
+                  onChange={(e) => setGradient({ ...gradient, noiseAmount: Number(e.target.value) })}
+                  className="w-full h-2 bg-background rounded accent-primary"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Type
+                </label>
+                <div className="flex gap-2">
+                  {["smooth", "harsh"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setGradient({ ...gradient, noiseType: type as "smooth" | "harsh" })}
+                      className={`flex-1 px-3 py-2 text-xs font-semibold uppercase rounded border-2 transition-colors ${
+                        gradient.noiseType === type
+                          ? "border-primary bg-primary/20 text-primary"
+                          : "border-foreground/10 bg-background text-muted-foreground"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

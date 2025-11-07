@@ -5,8 +5,7 @@ import { Canvas } from "./canvas"
 interface PreviewAreaProps {
   mode: "template" | "gradient" | "fractal"
   selectedTemplate: number
-  gradientColors: string[]
-  gradientAngle: number
+  gradient: any
   fractalParams: any
   canvasBackgrounds: string[]
   selectedBgIndex: number | null
@@ -15,8 +14,7 @@ interface PreviewAreaProps {
 export function PreviewArea({
   mode,
   selectedTemplate,
-  gradientColors,
-  gradientAngle,
+  gradient,
   fractalParams,
   canvasBackgrounds,
   selectedBgIndex,
@@ -31,13 +29,7 @@ export function PreviewArea({
         className="w-full max-w-2xl aspect-video rounded-lg border border-border overflow-hidden"
         style={{ backgroundColor: bgColor }}
       >
-        <Canvas
-          mode={mode}
-          selectedTemplate={selectedTemplate}
-          gradientColors={gradientColors}
-          gradientAngle={gradientAngle}
-          fractalParams={fractalParams}
-        />
+        <Canvas mode={mode} selectedTemplate={selectedTemplate} gradient={gradient} fractalParams={fractalParams} />
       </div>
     </div>
   )
