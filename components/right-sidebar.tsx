@@ -9,7 +9,6 @@ import { PerlinNoiseControls } from "./perlin-noise-controls"
 import { StrangeAttractorControls } from "./strange-attractor-controls"
 import { CellularAutomataControls } from "./cellular-automata-controls"
 import { FlowFieldControls } from "./flow-field-controls"
-import { VoronoiControls } from "./voronoi-controls"
 import { TessellationControls } from "./tessellation-controls"
 import { CirclePackingControls } from "./circle-packing-controls"
 import { OpArtControls } from "./op-art-controls"
@@ -21,7 +20,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  VoronoiParams,
   TessellationParams,
   CirclePackingParams,
   OpArtParams,
@@ -53,8 +51,6 @@ interface RightSidebarProps {
   setFlowFieldParams: (params: FlowFieldParams) => void
   mandelbrotAutoZoomActive?: boolean
   setMandelbrotAutoZoomActive?: (active: boolean) => void
-  voronoiParams: VoronoiParams
-  setVoronoiParams: (params: VoronoiParams) => void
   tessellationParams: TessellationParams
   setTessellationParams: (params: TessellationParams) => void
   circlePackingParams: CirclePackingParams
@@ -89,8 +85,6 @@ export function RightSidebar({
   setFlowFieldParams,
   mandelbrotAutoZoomActive,
   setMandelbrotAutoZoomActive,
-  voronoiParams,
-  setVoronoiParams,
   tessellationParams,
   setTessellationParams,
   circlePackingParams,
@@ -184,22 +178,10 @@ export function RightSidebar({
             </div>
           )}
 
-          {mode === "voronoi" && (
-            <div>
-              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Voronoi Cells</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Space divided into regions based on distance to seed points
-              </p>
-              <VoronoiControls params={voronoiParams} setParams={setVoronoiParams} />
-            </div>
-          )}
-
           {mode === "tessellation" && (
             <div>
               <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Tiled Patterns</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Geometric tessellations with customizable shapes and colors
-              </p>
+              <p className="text-xs text-muted-foreground mb-3">Repeating geometric shapes covering the plane</p>
               <TessellationControls params={tessellationParams} setParams={setTessellationParams} />
             </div>
           )}
@@ -207,7 +189,7 @@ export function RightSidebar({
           {mode === "circle-packing" && (
             <div>
               <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Circle Packing</h3>
-              <p className="text-xs text-muted-foreground mb-3">Circles packed into space with collision detection</p>
+              <p className="text-xs text-muted-foreground mb-3">Tangent circles filling space without overlapping</p>
               <CirclePackingControls params={circlePackingParams} setParams={setCirclePackingParams} />
             </div>
           )}
@@ -215,7 +197,7 @@ export function RightSidebar({
           {mode === "op-art" && (
             <div>
               <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Op Art</h3>
-              <p className="text-xs text-muted-foreground mb-3">Optical illusions with geometric patterns and color</p>
+              <p className="text-xs text-muted-foreground mb-3">Optical illusions with geometric patterns</p>
               <OpArtControls params={opArtParams} setParams={setOpArtParams} />
             </div>
           )}

@@ -11,7 +11,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  VoronoiParams,
   TessellationParams,
   CirclePackingParams,
   OpArtParams,
@@ -27,7 +26,6 @@ interface CanvasProps {
   strangeAttractorParams?: StrangeAttractorParams
   cellularAutomataParams?: CellularAutomataParams
   flowFieldParams?: FlowFieldParams
-  voronoiParams?: VoronoiParams
   tessellationParams?: TessellationParams
   circlePackingParams?: CirclePackingParams
   opArtParams?: OpArtParams
@@ -211,12 +209,19 @@ export function Canvas({
         }
       }, 150)
       return
-    } else if (mode === "voronoi" && voronoiParams) {
-      drawVoronoi(ctx, canvas.width, canvas.height, voronoiParams)
     } else if (mode === "tessellation" && tessellationParams) {
       drawTessellation(ctx, canvas.width, canvas.height, tessellationParams)
     } else if (mode === "circle-packing" && circlePackingParams) {
-      drawCirclePacking(ctx, canvas.width, canvas.height, circlePackingParams)
+      renderTimeoutRef.current = setTimeout(async () => {
+        try {
+          await drawCirclePackingAsync(ctx, canvas.width, canvas.height, circlePackingParams, currentRenderId, activeWorkersRef)
+        } catch (err) {
+          if (err instanceof Error && err.message !== "Render cancelled") {
+            console.error("Circle packing render error:", err)
+          }
+        }
+      }, 150)
+      return
     } else if (mode === "op-art" && opArtParams) {
       drawOpArt(ctx, canvas.width, canvas.height, opArtParams)
     }
@@ -238,7 +243,6 @@ export function Canvas({
     strangeAttractorParams,
     cellularAutomataParams,
     flowFieldParams,
-    voronoiParams,
     tessellationParams,
     circlePackingParams,
     opArtParams,
@@ -646,11 +650,11 @@ function drawCellularAutomata(
           const target = (current + 1) % stateCount
           let found = false
 
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              if (dx === 0 && dy === 0) continue
-              const ny = (y + dy + rows) % rows
-              const nx = (x + dx + cols) % cols
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue
+            const ny = (y + dy + rows) % rows
+            const nx = (x + dx + cols) % cols
               if (grid[ny][nx] === target) {
                 found = true
                 break
@@ -792,11 +796,257 @@ async function drawFlowFieldAsync(
   }
 }
 
-function drawFlowFieldSingleThreaded(
+async function drawVoronoiAsync(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  params: FlowFieldParams,
+  params: VoronoiParams,
+  renderId?: number,
+  activeWorkersRef?: React.MutableRefObject<Worker[]>,
+) {
+  // Check if Workers are supported
+  if (typeof Worker === "undefined") {
+    console.warn("Web Workers not supported, falling back to single-threaded Voronoi")
+    drawVoronoiSingleThreaded(ctx, width, height, params)
+    return
+  }
+
+  try {
+    const worker = new Worker("/voronoi-worker.js")
+    if (activeWorkersRef) {
+      activeWorkersRef.current.push(worker)
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      worker.onmessage = (e) => {
+        resolve(e.data)
+      }
+      worker.onerror = (error) => {
+        reject(error)
+      }
+
+      worker.postMessage({ width, height, params })
+    })
+
+    // Clean up worker
+    if (activeWorkersRef) {
+      const index = activeWorkersRef.current.indexOf(worker)
+      if (index > -1) {
+        activeWorkersRef.current.splice(index, 1)
+      }
+    }
+    worker.terminate()
+
+    // Render the result
+    const { voronoiData, seedPoints } = result as { voronoiData: Uint8ClampedArray, seedPoints: Array<{x: number, y: number, id: number}> }
+
+    // Create color mapping for seeds
+    const seedColors = seedPoints.map((seed, index) => {
+      if (params.colorMode === "random") {
+        const color = interpolateColor(params.colorPalette, Math.random() * 100)
+        return { ...color, id: seed.id }
+      } else {
+        // Distance-based coloring
+        const distance = Math.sqrt(seed.x * seed.x + seed.y * seed.y)
+        const maxDistance = Math.sqrt(width * width + height * height)
+        const ratio = distance / maxDistance
+        const color = interpolateColor(params.colorPalette, ratio * 100)
+        return { ...color, id: seed.id }
+      }
+    })
+
+    const imageData = ctx.createImageData(width, height)
+    const data = imageData.data
+
+    for (let i = 0; i < voronoiData.length; i++) {
+      const cellId = voronoiData[i]
+      const color = seedColors.find(c => c.id === cellId)
+      if (color) {
+        const idx = i * 4
+        if (params.fillCells) {
+          data[idx] = color.r
+          data[idx + 1] = color.g
+          data[idx + 2] = color.b
+          data[idx + 3] = 255
+        } else {
+          data[idx] = 255
+          data[idx + 1] = 255
+          data[idx + 2] = 255
+          data[idx + 3] = 255
+        }
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+
+    // Draw borders if enabled
+    if (params.showBorders) {
+      ctx.strokeStyle = params.borderColor
+      ctx.lineWidth = params.lineWeight
+
+      for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+          const currentCell = voronoiData[y * width + x]
+          const rightCell = voronoiData[y * width + x + 1]
+          const bottomCell = voronoiData[(y + 1) * width + x]
+
+          if (currentCell !== rightCell) {
+            ctx.beginPath()
+            ctx.moveTo(x + 1, y)
+            ctx.lineTo(x + 1, y + 1)
+            ctx.stroke()
+          }
+
+          if (currentCell !== bottomCell) {
+            ctx.beginPath()
+            ctx.moveTo(x, y + 1)
+            ctx.lineTo(x + 1, y + 1)
+            ctx.stroke()
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Worker rendering failed, falling back to single-threaded:", error)
+    drawVoronoiSingleThreaded(ctx, width, height, params)
+  }
+}
+
+async function drawCirclePackingAsync(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: CirclePackingParams,
+  renderId?: number,
+  activeWorkersRef?: React.MutableRefObject<Worker[]>,
+) {
+  // Check if Workers are supported
+  if (typeof Worker === "undefined") {
+    console.warn("Web Workers not supported, falling back to single-threaded circle packing")
+    drawCirclePackingSingleThreaded(ctx, width, height, params)
+    return
+  }
+
+  try {
+    const worker = new Worker("/circle-packing-worker.js")
+    if (activeWorkersRef) {
+      activeWorkersRef.current.push(worker)
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      worker.onmessage = (e) => {
+        resolve(e.data)
+      }
+      worker.onerror = (error) => {
+        reject(error)
+      }
+
+      worker.postMessage({ width, height, params })
+    })
+
+    // Clean up worker
+    if (activeWorkersRef) {
+      const index = activeWorkersRef.current.indexOf(worker)
+      if (index > -1) {
+        activeWorkersRef.current.splice(index, 1)
+      }
+    }
+    worker.terminate()
+
+    // Render the result
+    const { circles } = result as { circles: Array<{x: number, y: number, radius: number}> }
+
+    // Clear canvas
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, width, height)
+
+    circles.forEach(circle => {
+      // Fill circle if enabled
+      if (params.showFill) {
+        ctx.fillStyle = params.fillColor
+        ctx.beginPath()
+        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      // Stroke circle if enabled
+      if (params.showStroke) {
+        ctx.strokeStyle = params.strokeColor
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+    })
+  } catch (error) {
+    console.warn("Worker rendering failed, falling back to single-threaded:", error)
+    drawCirclePackingSingleThreaded(ctx, width, height, params)
+  }
+}
+
+function drawCirclePackingSingleThreaded(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: CirclePackingParams,
+) {
+  // Simple circle packing without worker
+  const circles = []
+  const maxCircles = Math.min(params.maxCircles, 100) // Limit for performance
+
+  for (let i = 0; i < maxCircles; i++) {
+    let attempts = 0
+    let placed = false
+
+    while (!placed && attempts < 50) {
+      const x = Math.random() * width
+      const y = Math.random() * height
+      const radius = Math.random() * 15 + 5
+
+      let collision = false
+      for (const circle of circles) {
+        const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2)
+        if (distance < radius + circle.radius + params.padding) {
+          collision = true
+          break
+        }
+      }
+
+      if (!collision && x - radius > 0 && x + radius < width && y - radius > 0 && y + radius < height) {
+        circles.push({ x, y, radius })
+        placed = true
+      }
+      attempts++
+    }
+  }
+
+  // Clear canvas
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, width, height)
+
+  circles.forEach(circle => {
+    if (params.showFill) {
+      ctx.fillStyle = params.fillColor
+      ctx.beginPath()
+      ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    if (params.showStroke) {
+      ctx.strokeStyle = params.strokeColor
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  })
+}
+
+function drawVoronoiSingleThreaded(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: VoronoiParams,
 ) {
   ctx.fillStyle = "#0a0a0a"
   ctx.fillRect(0, 0, width, height)
@@ -954,21 +1204,12 @@ function drawTessellation(ctx: CanvasRenderingContext2D, width: number, height: 
     const hexWidth = spacing
     const hexHeight = (spacing * Math.sqrt(3)) / 2
 
-    for (let row = -2; row < Math.ceil(height / hexHeight) + 2; row++) {
-      for (let col = -2; col < Math.ceil(width / hexWidth) + 2; col++) {
+    for (let row = -3; row < Math.ceil(height / hexHeight) + 3; row++) {
+      for (let col = -3; col < Math.ceil(width / hexWidth) + 3; col++) {
         const x = col * (hexWidth * 0.75)
         const y = row * hexHeight + (col % 2) * (hexHeight / 2)
-        drawHexagon(ctx, x, y, spacing / 2 - gutter, params)
-      }
-    }
-  } else if (params.shape === "squares") {
-    for (let y = -spacing; y < height + spacing; y += spacing) {
-      for (let x = -spacing; x < width + spacing; x += spacing) {
-        ctx.fillStyle = params.fillMode === "random" ? `hsl(${Math.random() * 360}, 70%, 60%)` : params.baseColor
-        ctx.fillRect(x + gutter, y + gutter, spacing - gutter * 2, spacing - gutter * 2)
-        ctx.strokeStyle = params.baseColor
-        ctx.lineWidth = 1
-        ctx.strokeRect(x + gutter, y + gutter, spacing - gutter * 2, spacing - gutter * 2)
+        const hexSize = Math.max(1, spacing / 2 - gutter)
+        drawHexagon(ctx, x, y, hexSize, params)
       }
     }
   } else if (params.shape === "triangles") {
@@ -1084,9 +1325,6 @@ function drawOpArt(ctx: CanvasRenderingContext2D, width: number, height: number,
 
       if (params.pattern === "sine-wave") {
         value = Math.sin((x / params.frequency) * Math.PI + (y / params.amplitude) * Math.PI) * 0.5 + 0.5
-      } else if (params.pattern === "warped-grid") {
-        const warp = Math.sin(x / params.frequency) * params.amplitude
-        value = Math.abs(Math.sin((x + warp) / 20) * Math.cos(y / 20)) * 0.5 + 0.5
       } else {
         const checker = (Math.floor(x / (params.frequency / 10)) + Math.floor(y / (params.frequency / 10))) % 2
         value = checker

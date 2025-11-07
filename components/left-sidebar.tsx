@@ -9,7 +9,6 @@ import {
   Orbit,
   Grid3x3,
   Wind,
-  Hexagon,
   Circle,
   Box,
   Zap,
@@ -22,7 +21,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  VoronoiParams,
   TessellationParams,
   CirclePackingParams,
   OpArtParams,
@@ -47,8 +45,6 @@ interface LeftSidebarProps {
   setCellularAutomataParams: (params: CellularAutomataParams) => void
   flowFieldParams: FlowFieldParams
   setFlowFieldParams: (params: FlowFieldParams) => void
-  voronoiParams: VoronoiParams
-  setVoronoiParams: (params: VoronoiParams) => void
   tessellationParams: TessellationParams
   setTessellationParams: (params: TessellationParams) => void
   circlePackingParams: CirclePackingParams
@@ -76,8 +72,6 @@ export function LeftSidebar({
   setCellularAutomataParams,
   flowFieldParams,
   setFlowFieldParams,
-  voronoiParams,
-  setVoronoiParams,
   tessellationParams,
   setTessellationParams,
   circlePackingParams,
@@ -125,11 +119,6 @@ export function LeftSidebar({
       id: "flow-field" as const,
       label: "Vector Dreams",
       icon: Wind,
-    },
-    {
-      id: "voronoi" as const,
-      label: "Voronoi Cells",
-      icon: Hexagon,
     },
     {
       id: "tessellation" as const,

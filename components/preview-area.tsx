@@ -14,7 +14,6 @@ import type {
   StrangeAttractorParams,
   CellularAutomataParams,
   FlowFieldParams,
-  VoronoiParams,
   TessellationParams,
   CirclePackingParams,
   OpArtParams,
@@ -37,7 +36,6 @@ interface PreviewAreaProps {
   flowFieldParams?: FlowFieldParams
   mandelbrotAutoZoomActive?: boolean
   setMandelbrotAutoZoomActive?: (active: boolean) => void
-  voronoiParams?: VoronoiParams
   tessellationParams?: TessellationParams
   circlePackingParams?: CirclePackingParams
   opArtParams?: OpArtParams
@@ -60,7 +58,6 @@ export function PreviewArea({
   flowFieldParams,
   mandelbrotAutoZoomActive,
   setMandelbrotAutoZoomActive,
-  voronoiParams,
   tessellationParams,
   circlePackingParams,
   opArtParams,
@@ -226,7 +223,6 @@ export function PreviewArea({
           strangeAttractorParams={strangeAttractorParams}
           cellularAutomataParams={cellularAutomataParams}
           flowFieldParams={flowFieldParams}
-          voronoiParams={voronoiParams}
           tessellationParams={tessellationParams}
           circlePackingParams={circlePackingParams}
           opArtParams={opArtParams}

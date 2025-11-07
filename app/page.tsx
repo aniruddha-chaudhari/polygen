@@ -84,20 +84,9 @@ export interface FlowFieldParams {
   opacity: number
 }
 
-export interface VoronoiParams {
-  pointCount: number
-  layout: "random" | "grid" | "grid-jittered"
-  showBorders: boolean
-  fillCells: boolean
-  lineWeight: number
-  borderColor: string
-  distanceMetric: "euclidean" | "manhattan"
-  colorMode: "random" | "distance"
-  colorPalette: ColorStop[]
-}
 
 export interface TessellationParams {
-  shape: "triangles" | "squares" | "hexagons"
+  shape: "triangles" | "hexagons"
   offset: number
   gutter: number
   fillMode: "solid" | "random" | "gradient"
@@ -117,7 +106,7 @@ export interface CirclePackingParams {
 }
 
 export interface OpArtParams {
-  pattern: "sine-wave" | "warped-grid" | "checkered"
+  pattern: "sine-wave" | "checkered"
   frequency: number
   amplitude: number
   color1: string
@@ -134,7 +123,6 @@ export type Mode =
   | "strange-attractor"
   | "cellular-automata"
   | "flow-field"
-  | "voronoi"
   | "tessellation"
   | "circle-packing"
   | "op-art"
@@ -228,22 +216,6 @@ export default function Home() {
     opacity: 0.5,
   })
 
-  const [voronoiParams, setVoronoiParams] = useState<VoronoiParams>({
-    pointCount: 50,
-    layout: "random",
-    showBorders: true,
-    fillCells: true,
-    lineWeight: 2,
-    borderColor: "#000000",
-    distanceMetric: "euclidean",
-    colorMode: "random",
-    colorPalette: [
-      { color: "#ff6b6b", position: 0, alpha: 1 },
-      { color: "#4ecdc4", position: 50, alpha: 1 },
-      { color: "#45b7d1", position: 100, alpha: 1 },
-    ],
-  })
-
   const [tessellationParams, setTessellationParams] = useState<TessellationParams>({
     shape: "hexagons",
     offset: 0.5,
@@ -333,8 +305,6 @@ export default function Home() {
               setCellularAutomataParams={setCellularAutomataParams}
               flowFieldParams={flowFieldParams}
               setFlowFieldParams={setFlowFieldParams}
-              voronoiParams={voronoiParams}
-              setVoronoiParams={setVoronoiParams}
               tessellationParams={tessellationParams}
               setTessellationParams={setTessellationParams}
               circlePackingParams={circlePackingParams}
@@ -372,8 +342,6 @@ export default function Home() {
             selectedBgIndex={selectedBgIndex}
             mandelbrotAutoZoomActive={mandelbrotAutoZoomActive}
             setMandelbrotAutoZoomActive={setMandelbrotAutoZoomActive}
-            voronoiParams={voronoiParams}
-            setVoronoiParams={setVoronoiParams}
             tessellationParams={tessellationParams}
             setTessellationParams={setTessellationParams}
             circlePackingParams={circlePackingParams}
@@ -424,8 +392,6 @@ export default function Home() {
               setSelectedBgIndex={setSelectedBgIndex}
               mandelbrotAutoZoomActive={mandelbrotAutoZoomActive}
               setMandelbrotAutoZoomActive={setMandelbrotAutoZoomActive}
-              voronoiParams={voronoiParams}
-              setVoronoiParams={setVoronoiParams}
               tessellationParams={tessellationParams}
               setTessellationParams={setTessellationParams}
               circlePackingParams={circlePackingParams}

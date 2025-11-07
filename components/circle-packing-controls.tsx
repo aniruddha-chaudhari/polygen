@@ -1,6 +1,9 @@
 "use client"
 
-import { ColorPicker } from "./retroui/ColorPicker"
+import { Slider } from "@/components/retroui/Slider"
+import { Select } from "@/components/retroui/Select"
+import { Switch } from "@/components/ui/switch"
+import { GradientColorStops } from "@/components/gradient-color-stops"
 import type { CirclePackingParams } from "@/app/page"
 
 interface CirclePackingControlsProps {
@@ -9,101 +12,118 @@ interface CirclePackingControlsProps {
 }
 
 export function CirclePackingControls({ params, setParams }: CirclePackingControlsProps) {
+  const handleChange = (key: keyof CirclePackingParams, value: number | boolean | string | typeof params.colorPalette) => {
+    setParams({ ...params, [key]: value })
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Packing Mode */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-          Packing Mode
-        </label>
-        <div className="flex gap-2">
-          {["random", "grow-from-center"].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setParams({ ...params, packingMode: mode as "random" | "grow-from-center" })}
-              className={`flex-1 px-2 py-2 text-xs font-semibold rounded border-2 transition-colors ${
-                params.packingMode === mode
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-foreground/10 bg-muted text-muted-foreground"
-              }`}
-            >
-              {mode.replace("-", " ")}
-            </button>
-          ))}
-        </div>
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Packing Mode</label>
+        <Select
+          value={params.packingMode}
+          onValueChange={(value: CirclePackingParams["packingMode"]) => handleChange("packingMode", value)}
+        >
+          <Select.Trigger className="w-full">
+            <Select.Value placeholder="Select packing mode" />
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="random">Random Sizes</Select.Item>
+            <Select.Item value="grow-from-center">Grow from Center</Select.Item>
+          </Select.Content>
+        </Select>
       </div>
 
       {/* Max Circles */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Max Circles</label>
           <span className="text-xs font-mono text-primary">{params.maxCircles}</span>
         </div>
-        <input
-          type="range"
-          min="50"
-          max="2000"
-          step="50"
-          value={params.maxCircles}
-          onChange={(e) => setParams({ ...params, maxCircles: Number(e.target.value) })}
-          className="w-full h-2 bg-muted rounded accent-primary"
+        <Slider
+          value={[params.maxCircles]}
+          onValueChange={([v]) => handleChange("maxCircles", v)}
+          min={50}
+          max={2000}
+          step={50}
+          className="w-full"
         />
       </div>
 
       {/* Padding */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Padding</label>
-          <span className="text-xs font-mono text-primary">{params.padding}px</span>
+          <span className="text-xs font-mono text-primary">{params.padding}</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="10"
-          value={params.padding}
-          onChange={(e) => setParams({ ...params, padding: Number(e.target.value) })}
-          className="w-full h-2 bg-muted rounded accent-primary"
+        <Slider
+          value={[params.padding]}
+          onValueChange={([v]) => handleChange("padding", v)}
+          min={0}
+          max={10}
+          step={0.5}
+          className="w-full"
         />
       </div>
 
       {/* Show Fill */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Show Fill</label>
-          <input
-            type="checkbox"
-            checked={params.showFill}
-            onChange={(e) => setParams({ ...params, showFill: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
-        </div>
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Show Fill</label>
+        <Switch
+          checked={params.showFill}
+          onCheckedChange={(checked) => handleChange("showFill", checked)}
+        />
       </div>
 
       {/* Show Stroke */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Show Stroke</label>
-          <input
-            type="checkbox"
-            checked={params.showStroke}
-            onChange={(e) => setParams({ ...params, showStroke: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
-        </div>
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Show Stroke</label>
+        <Switch
+          checked={params.showStroke}
+          onCheckedChange={(checked) => handleChange("showStroke", checked)}
+        />
       </div>
 
       {/* Fill Color */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Fill Color</label>
-        <ColorPicker value={params.fillColor} onChange={(color) => setParams({ ...params, fillColor: color })} />
-      </div>
+      {params.showFill && (
+        <div className="space-y-3">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fill Color</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={params.fillColor}
+              onChange={(e) => handleChange("fillColor", e.target.value)}
+              className="w-8 h-8 rounded border border-border cursor-pointer"
+            />
+            <span className="text-xs font-mono text-primary">{params.fillColor}</span>
+          </div>
+        </div>
+      )}
 
       {/* Stroke Color */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-          Stroke Color
-        </label>
-        <ColorPicker value={params.strokeColor} onChange={(color) => setParams({ ...params, strokeColor: color })} />
+      {params.showStroke && (
+        <div className="space-y-3">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Stroke Color</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={params.strokeColor}
+              onChange={(e) => handleChange("strokeColor", e.target.value)}
+              className="w-8 h-8 rounded border border-border cursor-pointer"
+            />
+            <span className="text-xs font-mono text-primary">{params.strokeColor}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Color Palette */}
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Color Palette</label>
+        <GradientColorStops
+          colorStops={params.colorPalette}
+          setColorStops={(palette) => handleChange("colorPalette", palette)}
+        />
       </div>
     </div>
   )
