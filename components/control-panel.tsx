@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/retroui/Button"
 import { TemplateGallery } from "./template-gallery"
 import { GradientControls } from "./gradient-controls"
 import { FractalControls } from "./fractal-controls"

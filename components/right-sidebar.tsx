@@ -11,6 +11,8 @@ interface RightSidebarProps {
   setSelectedTemplate: (id: number) => void
   gradientColors: string[]
   setGradientColors: (colors: string[]) => void
+  gradientAngle: number
+  setGradientAngle: (angle: number) => void
   fractalParams: any
   setFractalParams: (params: any) => void
   canvasBackgrounds: string[]
@@ -25,6 +27,8 @@ export function RightSidebar({
   setSelectedTemplate,
   gradientColors,
   setGradientColors,
+  gradientAngle,
+  setGradientAngle,
   fractalParams,
   setFractalParams,
   canvasBackgrounds,
@@ -50,7 +54,7 @@ export function RightSidebar({
               <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">
                 Gradient Settings
               </h3>
-              <GradientControls colors={gradientColors} setColors={setGradientColors} />
+              <GradientControls colors={gradientColors} setColors={setGradientColors} angle={gradientAngle} setAngle={setGradientAngle} />
             </div>
           )}
 

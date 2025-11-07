@@ -1,47 +1,90 @@
 "use client"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { Input } from "@/components/retroui/Input"
+import { ColorPicker } from "@/components/retroui/ColorPicker"
+import { useState, useEffect, useCallback } from "react"
+
+// Helper function to validate if a string is a valid CSS color
+function isValidColor(color: string): boolean {
+  if (!color || color.trim() === '') return false
+
+  // Check if we're on the client side (browser environment)
+  if (typeof window === 'undefined' || !document) return true
+
+  // Create a temporary element to test the color
+  const testElement = document.createElement('div')
+  testElement.style.color = color
+  return testElement.style.color !== ''
+}
+
+// Fallback colors for invalid inputs
+const FALLBACK_COLORS = ['#a78bfa', '#ec4899']
 
 interface GradientControlsProps {
   colors: string[]
   setColors: (colors: string[]) => void
+  angle: number
+  setAngle: (angle: number) => void
 }
 
-export function GradientControls({ colors, setColors }: GradientControlsProps) {
-  const [gradientAngle, setGradientAngle] = useState(135)
+export function GradientControls({ colors, setColors, angle, setAngle }: GradientControlsProps) {
+  // Local state for text inputs - allows typing without affecting parent state
+  const [inputValues, setInputValues] = useState(colors)
+
+  // Sync input values when colors prop changes
+  useEffect(() => {
+    setInputValues(colors)
+  }, [colors])
+
+  const handleColorChange = useCallback((index: number, newColor: string) => {
+    // Only update state if the new color is valid
+    if (isValidColor(newColor)) {
+      const newColors = [...colors]
+      newColors[index] = newColor
+      setColors(newColors)
+    }
+  }, [colors, setColors])
+
+  // Create stable callbacks for each color index
+  const handleColor0Change = useCallback((color: string) => handleColorChange(0, color), [handleColorChange])
+  const handleColor1Change = useCallback((color: string) => handleColorChange(1, color), [handleColorChange])
+
+  const handleTextInputChange = (index: number, newValue: string) => {
+    // Update local input state immediately
+    const newInputValues = [...inputValues]
+    newInputValues[index] = newValue
+    setInputValues(newInputValues)
+
+    // Only update parent state if valid
+    if (isValidColor(newValue)) {
+      const newColors = [...colors]
+      newColors[index] = newValue
+      setColors(newColors)
+    }
+  }
+
+  // For display, use the current valid colors (don't change them until valid input)
+  const displayColors = colors.map((color, index) =>
+    isValidColor(color) ? color : FALLBACK_COLORS[index % FALLBACK_COLORS.length]
+  )
 
   return (
     <div className="space-y-6">
       {/* Color stops */}
       {[0, 1].map((index) => (
         <div key={index} className="space-y-3">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
             {index === 0 ? "Start" : "End"} Color
-          </Label>
+          </label>
           <div className="flex gap-3 items-center">
-            <div className="relative group">
-              <input
-                type="color"
-                value={colors[index]}
-                onChange={(e) => {
-                  const newColors = [...colors]
-                  newColors[index] = e.target.value
-                  setColors(newColors)
-                }}
-                className="w-14 h-14 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
-              />
-              <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 bg-primary/10 transition-opacity" />
-            </div>
+            <ColorPicker
+              value={displayColors[index]}
+              onChange={index === 0 ? handleColor0Change : handleColor1Change}
+            />
             <div className="flex-1">
               <Input
                 type="text"
-                value={colors[index]}
-                onChange={(e) => {
-                  const newColors = [...colors]
-                  newColors[index] = e.target.value
-                  setColors(newColors)
-                }}
+                value={inputValues[index]}
+                onChange={(e) => handleTextInputChange(index, e.target.value)}
                 className="h-9 text-sm font-mono bg-muted text-foreground border-border"
               />
             </div>
@@ -52,29 +95,19 @@ export function GradientControls({ colors, setColors }: GradientControlsProps) {
       {/* Gradient angle */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Angle</Label>
-          <span className="text-xs font-mono text-primary">{gradientAngle}°</span>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Angle</label>
+          <span className="text-xs font-mono text-primary">{angle}°</span>
         </div>
         <input
           type="range"
           min="0"
           max="360"
-          value={gradientAngle}
-          onChange={(e) => setGradientAngle(Number(e.target.value))}
+          value={angle}
+          onChange={(e) => setAngle(Number(e.target.value))}
           className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
         />
       </div>
 
-      {/* Live preview */}
-      <div className="space-y-2">
-        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Preview</Label>
-        <div
-          className="w-full h-32 rounded-lg border-2 border-border shadow-lg"
-          style={{
-            background: `linear-gradient(${gradientAngle}deg, ${colors[0]} 0%, ${colors[1]} 100%)`,
-          }}
-        />
-      </div>
     </div>
   )
 }

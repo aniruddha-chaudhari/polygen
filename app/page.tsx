@@ -5,12 +5,15 @@ import { LeftSidebar } from "@/components/left-sidebar"
 import { RightSidebar } from "@/components/right-sidebar"
 import { PreviewArea } from "@/components/preview-area"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { Button } from "@/components/retroui/Button"
+import { Text } from "@/components/retroui/Text"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function Home() {
   const [mode, setMode] = useState<"template" | "gradient" | "fractal">("gradient")
   const [selectedTemplate, setSelectedTemplate] = useState(0)
   const [gradientColors, setGradientColors] = useState(["#a78bfa", "#ec4899"])
+  const [gradientAngle, setGradientAngle] = useState(135)
   const [canvasBackgrounds, setCanvasBackgrounds] = useState<string[]>([])
   const [selectedBgIndex, setSelectedBgIndex] = useState<number | null>(null)
   const [fractalParams, setFractalParams] = useState({
@@ -38,16 +41,13 @@ export default function Home() {
     <div className={theme === "dark" ? "dark" : ""}>
       <div className="flex h-screen bg-background text-foreground">
         {/* Top Header - Retro style */}
-        <div className="fixed top-0 left-0 right-0 h-14 border-b-4 border-foreground/20 bg-background/95 backdrop-blur flex items-center justify-between px-6 z-50">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-sm border-2 border-foreground bg-gradient-to-br from-purple-400 to-pink-500" />
-            <span className="text-lg font-black tracking-wider">POLYGEN</span>
-          </div>
+        <div className="fixed top-0 left-0 right-0 h-20 border-b-4 border-foreground/20 bg-background/95 backdrop-blur flex items-center justify-between px-6 z-50">
+          <img src="/logo.svg" alt="POLYGEN" className="h-40 w-auto" />
           <ThemeSwitcher theme={theme} setTheme={handleThemeChange} />
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-1 pt-14">
+        <div className="flex flex-1 pt-20">
           {/* Left Sidebar - Collapsible */}
           <div
             className={`transition-all duration-300 border-r-4 border-foreground/10 overflow-hidden ${
@@ -61,36 +61,43 @@ export default function Home() {
               setSelectedTemplate={setSelectedTemplate}
               gradientColors={gradientColors}
               setGradientColors={setGradientColors}
+              gradientAngle={gradientAngle}
+              setGradientAngle={setGradientAngle}
               fractalParams={fractalParams}
               setFractalParams={setFractalParams}
             />
           </div>
 
           {/* Toggle Left Sidebar Button */}
-          <button
+          <Button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            className="group w-8 border-r-2 border-foreground/10 hover:bg-secondary/50 flex items-center justify-center transition-colors"
+            variant="outline"
+            size="icon"
+            className="group w-8 border-r-2 border-foreground/10"
           >
             <ChevronLeft className={`w-4 h-4 transition-transform ${!leftSidebarOpen ? "rotate-180" : ""}`} />
-          </button>
+          </Button>
 
           {/* Center Canvas Area */}
           <PreviewArea
             mode={mode}
             selectedTemplate={selectedTemplate}
             gradientColors={gradientColors}
+            gradientAngle={gradientAngle}
             fractalParams={fractalParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
           />
 
           {/* Toggle Right Sidebar Button */}
-          <button
+          <Button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="group w-8 border-l-2 border-foreground/10 hover:bg-secondary/50 flex items-center justify-center transition-colors"
+            variant="outline"
+            size="icon"
+            className="group w-8 border-l-2 border-foreground/10"
           >
             <ChevronRight className={`w-4 h-4 transition-transform ${!rightSidebarOpen ? "rotate-180" : ""}`} />
-          </button>
+          </Button>
 
           {/* Right Sidebar - Collapsible */}
           <div
@@ -104,6 +111,8 @@ export default function Home() {
               setSelectedTemplate={setSelectedTemplate}
               gradientColors={gradientColors}
               setGradientColors={setGradientColors}
+              gradientAngle={gradientAngle}
+              setGradientAngle={setGradientAngle}
               fractalParams={fractalParams}
               setFractalParams={setFractalParams}
               canvasBackgrounds={canvasBackgrounds}

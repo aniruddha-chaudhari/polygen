@@ -1,10 +1,6 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus, X } from "lucide-react"
-import { useState } from "react"
+import { X } from "lucide-react"
 
 interface CanvasBackgroundManagerProps {
   backgrounds: string[]
@@ -19,12 +15,6 @@ export function CanvasBackgroundManager({
   selectedIndex,
   setSelectedIndex,
 }: CanvasBackgroundManagerProps) {
-  const [newColor, setNewColor] = useState("#ffffff")
-
-  const addBackground = () => {
-    setBackgrounds([...backgrounds, newColor])
-    setSelectedIndex(backgrounds.length)
-  }
 
   const removeBackground = (index: number) => {
     const updated = backgrounds.filter((_, i) => i !== index)
@@ -36,33 +26,8 @@ export function CanvasBackgroundManager({
 
   return (
     <div className="space-y-4">
-      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Canvas Background</Label>
+      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Canvas Background</label>
 
-      {/* Add new background */}
-      <div className="flex gap-2">
-        <div className="flex-1 flex gap-2 items-center">
-          <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            className="w-10 h-10 rounded-lg border-2 border-border cursor-pointer hover:border-primary transition-colors"
-          />
-          <Input
-            type="text"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            className="h-9 text-sm font-mono bg-muted border-border flex-1"
-          />
-        </div>
-        <Button
-          onClick={addBackground}
-          size="sm"
-          variant="outline"
-          className="h-10 w-10 p-0 border-border hover:bg-muted bg-transparent"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
-      </div>
 
       {/* Background list */}
       {backgrounds.length > 0 && (

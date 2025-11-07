@@ -1,7 +1,6 @@
 "use client"
 
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
+import { Slider } from "@/components/retroui/Slider"
 
 interface FractalControlsProps {
   params: any
@@ -17,7 +16,7 @@ export function FractalControls({ params, setParams }: FractalControlsProps) {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sides</Label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sides</label>
           <span className="text-xs font-mono text-primary">{params.sides}</span>
         </div>
         <Slider
@@ -32,7 +31,7 @@ export function FractalControls({ params, setParams }: FractalControlsProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Iterations</Label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Iterations</label>
           <span className="text-xs font-mono text-primary">{params.iterations}</span>
         </div>
         <Slider
@@ -47,7 +46,7 @@ export function FractalControls({ params, setParams }: FractalControlsProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scale</Label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scale</label>
           <span className="text-xs font-mono text-primary">{params.scale.toFixed(2)}</span>
         </div>
         <Slider
@@ -62,7 +61,7 @@ export function FractalControls({ params, setParams }: FractalControlsProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rotation</Label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rotation</label>
           <span className="text-xs font-mono text-primary">{params.rotation.toFixed(0)}°</span>
         </div>
         <Slider

@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+no need to use pnpm build everytime you do something neither need star dev server by using pnpm dev unless explicitely asked

@@ -6,6 +6,7 @@ interface CanvasProps {
   mode: "template" | "gradient" | "fractal"
   selectedTemplate: number
   gradientColors: string[]
+  gradientAngle: number
   fractalParams: any
 }
 
@@ -18,7 +19,7 @@ const templates = [
   { name: "Sky", colors: ["#87ceeb", "#e0f6ff"] },
 ]
 
-export function Canvas({ mode, selectedTemplate, gradientColors, fractalParams }: CanvasProps) {
+export function Canvas({ mode, selectedTemplate, gradientColors, gradientAngle, fractalParams }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -39,15 +40,38 @@ export function Canvas({ mode, selectedTemplate, gradientColors, fractalParams }
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, canvas.width, canvas.height)
     } else if (mode === "gradient") {
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-      gradient.addColorStop(0, gradientColors[0])
-      gradient.addColorStop(1, gradientColors[1])
+      // Validate colors and provide fallbacks
+      const validColors = gradientColors.map((color, index) => {
+        if (color && color.trim() !== '') {
+          // Test if color is valid by setting it temporarily
+          const testDiv = document.createElement('div')
+          testDiv.style.color = color
+          if (testDiv.style.color !== '') return color
+        }
+        // Fallback colors
+        return index === 0 ? '#a78bfa' : '#ec4899'
+      })
+
+      // Calculate gradient start and end points based on angle
+      const angleRad = (gradientAngle * Math.PI) / 180
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY) * 2
+
+      const startX = centerX - Math.cos(angleRad) * maxDistance
+      const startY = centerY - Math.sin(angleRad) * maxDistance
+      const endX = centerX + Math.cos(angleRad) * maxDistance
+      const endY = centerY + Math.sin(angleRad) * maxDistance
+
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
+      gradient.addColorStop(0, validColors[0])
+      gradient.addColorStop(1, validColors[1])
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, canvas.width, canvas.height)
     } else if (mode === "fractal") {
       drawFractal(ctx, canvas.width, canvas.height, fractalParams)
     }
-  }, [mode, selectedTemplate, gradientColors, fractalParams])
+  }, [mode, selectedTemplate, gradientColors, gradientAngle, fractalParams])
 
   return <canvas ref={canvasRef} className="w-full h-full" crossOrigin="anonymous" />
 }

@@ -30,7 +30,7 @@ export function TemplateGallery({ selected, onSelect }: TemplateGalleryProps) {
             }`}
           >
             <div
-              className="w-full h-16 rounded-md mb-2 shadow-md group-hover:shadow-lg transition-shadow"
+              className="w-full h-16 rounded-md mb-2 transition-all"
               style={{
                 background: `linear-gradient(135deg, ${template.colors[0]} 0%, ${template.colors[1]} 100%)`,
               }}

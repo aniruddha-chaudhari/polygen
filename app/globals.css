@@ -1,30 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
-  /* Light mode - retro cream palette */
-  --background: 0 0% 96%;
-  --foreground: 0 0% 15%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 15%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 15%;
-  --primary: 267 77% 57%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
-  --muted: 0 0% 82%;
-  --muted-foreground: 0 0% 45%;
-  --accent: 345 100% 55%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 88%;
-  --input: 0 0% 88%;
-  --ring: 267 77% 57%;
-  --radius: 0.25rem;
+  --radius: 0;
+  --background: #fff;
+  --foreground: #000;
+  --card: #fff;
+  --card-foreground: #000;
+  --primary: #000;
+  --primary-hover: #333;
+  --primary-foreground: #fff;
+  --secondary: #000;
+  --secondary-foreground: #fff;
+  --muted: #aeaeae;
+  --muted-foreground: #5a5a5a;
+  --accent: #666;
+  --accent-foreground: #000;
+  --destructive: #e63946;
+  --destructive-foreground: #fff;
+  --border: #000;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -41,26 +35,23 @@
 }
 
 .dark {
-  /* Dark mode - retro dark palette */
-  --background: 0 0% 10%;
-  --foreground: 0 0% 95%;
-  --card: 0 0% 14%;
-  --card-foreground: 0 0% 95%;
-  --popover: 0 0% 14%;
-  --popover-foreground: 0 0% 95%;
-  --primary: 267 77% 65%;
-  --primary-foreground: 0 0% 10%;
-  --secondary: 0 0% 20%;
-  --secondary-foreground: 0 0% 95%;
-  --muted: 0 0% 25%;
-  --muted-foreground: 0 0% 65%;
-  --accent: 345 100% 65%;
-  --accent-foreground: 0 0% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 10%;
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 267 77% 65%;
+  --radius: 0;
+  --background: #1a1a1a;
+  --foreground: #f5f5f5;
+  --card: #242424;
+  --card-foreground: #f5f5f5;
+  --primary: #000;
+  --primary-hover: #333;
+  --primary-foreground: #fff;
+  --secondary: #3a3a3a;
+  --secondary-foreground: #f5f5f5;
+  --muted: #3f3f46;
+  --muted-foreground: #a0a0a0;
+  --accent: #666;
+  --accent-foreground: #000;
+  --destructive: #e63946;
+  --destructive-foreground: #fff;
+  --border: #3a3a3a;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -76,18 +67,28 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
-@theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
+@theme {
+  --font-head: var(--font-head);
+  --font-sans: var(--font-sans);
+  --radius: var(--radius);
+
+  --shadow-xs: 1px 1px 0 0 var(--border);
+  --shadow-sm: 2px 2px 0 0 var(--border);
+  --shadow: 3px 3px 0 0 var(--border);
+  --shadow-md: 4px 4px 0 0 var(--border);
+  --shadow-lg: 6px 6px 0 0 var(--border);
+  --shadow-xl: 10px 10px 0 1px var(--border);
+  --shadow-2xl: 16px 16px 0 1px var(--border);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -95,8 +96,12 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+
+  --dark-mode: 'class';
+  --color-popover: hsl(var(--card));
+  --color-popover-foreground: hsl(var(--card-foreground));
+  --color-input: hsl(var(--border));
+  --color-ring: hsl(var(--primary));
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
