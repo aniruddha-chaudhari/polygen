@@ -1,7 +1,16 @@
 "use client"
 
-import { FileText, PaintBucket, Sparkles, Maximize } from "lucide-react"
-import type { Mode, ChaosGameParams, MandelbrotParams } from "@/app/page"
+import { FileText, PaintBucket, Sparkles, Maximize, Waves, Droplets, Orbit, Grid3x3, Wind } from "lucide-react"
+import type {
+  Mode,
+  ChaosGameParams,
+  MandelbrotParams,
+  PerlinNoiseParams,
+  StrangeAttractorParams,
+  CellularAutomataParams,
+  FlowFieldParams,
+  ReactionDiffusionParams,
+} from "@/app/page"
 
 interface LeftSidebarProps {
   mode: Mode
@@ -14,6 +23,16 @@ interface LeftSidebarProps {
   setChaosGameParams: (params: ChaosGameParams) => void
   mandelbrotParams: MandelbrotParams
   setMandelbrotParams: (params: MandelbrotParams) => void
+  perlinNoiseParams: PerlinNoiseParams
+  setPerlinNoiseParams: (params: PerlinNoiseParams) => void
+  strangeAttractorParams: StrangeAttractorParams
+  setStrangeAttractorParams: (params: StrangeAttractorParams) => void
+  cellularAutomataParams: CellularAutomataParams
+  setCellularAutomataParams: (params: CellularAutomataParams) => void
+  flowFieldParams: FlowFieldParams
+  setFlowFieldParams: (params: FlowFieldParams) => void
+  reactionDiffusionParams: ReactionDiffusionParams
+  setReactionDiffusionParams: (params: ReactionDiffusionParams) => void
 }
 
 export function LeftSidebar({
@@ -27,16 +46,26 @@ export function LeftSidebar({
   setChaosGameParams,
   mandelbrotParams,
   setMandelbrotParams,
+  perlinNoiseParams,
+  setPerlinNoiseParams,
+  strangeAttractorParams,
+  setStrangeAttractorParams,
+  cellularAutomataParams,
+  setCellularAutomataParams,
+  flowFieldParams,
+  setFlowFieldParams,
+  reactionDiffusionParams,
+  setReactionDiffusionParams,
 }: LeftSidebarProps) {
   const tabs = [
     {
       id: "template" as const,
-      label: "Templates",
+      label: "Prismatic Palettes",
       icon: FileText,
     },
     {
       id: "gradient" as const,
-      label: "Gradients",
+      label: "Chromatic Flows",
       icon: PaintBucket,
     },
     {
@@ -48,6 +77,31 @@ export function LeftSidebar({
       id: "mandelbrot" as const,
       label: "Infinite Zoom",
       icon: Maximize,
+    },
+    {
+      id: "perlin-noise" as const,
+      label: "Noise Canvas",
+      icon: Waves,
+    },
+    {
+      id: "reaction-diffusion" as const,
+      label: "Morphic Bloom",
+      icon: Droplets,
+    },
+    {
+      id: "strange-attractor" as const,
+      label: "Strange Orbits",
+      icon: Orbit,
+    },
+    {
+      id: "cellular-automata" as const,
+      label: "Grid Genesis",
+      icon: Grid3x3,
+    },
+    {
+      id: "flow-field" as const,
+      label: "Vector Dreams",
+      icon: Wind,
     },
   ]
 

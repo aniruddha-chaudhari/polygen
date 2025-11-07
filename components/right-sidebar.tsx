@@ -5,7 +5,21 @@ import { GradientControls } from "./gradient-controls"
 import { ChaosGameControls } from "./chaos-game-controls"
 import { MandelbrotControls } from "./mandelbrot-controls"
 import { CanvasBackgroundManager } from "./canvas-background-manager"
-import type { Mode, ChaosGameParams, MandelbrotParams } from "@/app/page"
+import { PerlinNoiseControls } from "./perlin-noise-controls"
+import { StrangeAttractorControls } from "./strange-attractor-controls"
+import { CellularAutomataControls } from "./cellular-automata-controls"
+import { FlowFieldControls } from "./flow-field-controls"
+import { ReactionDiffusionControls } from "./reaction-diffusion-controls"
+import type {
+  Mode,
+  ChaosGameParams,
+  MandelbrotParams,
+  PerlinNoiseParams,
+  StrangeAttractorParams,
+  CellularAutomataParams,
+  FlowFieldParams,
+  ReactionDiffusionParams,
+} from "@/app/page"
 
 interface RightSidebarProps {
   mode: Mode
@@ -23,6 +37,16 @@ interface RightSidebarProps {
   setCanvasBackgrounds: (bg: string[]) => void
   selectedBgIndex: number | null
   setSelectedBgIndex: (idx: number | null) => void
+  perlinNoiseParams: PerlinNoiseParams
+  setPerlinNoiseParams: (params: PerlinNoiseParams) => void
+  strangeAttractorParams: StrangeAttractorParams
+  setStrangeAttractorParams: (params: StrangeAttractorParams) => void
+  cellularAutomataParams: CellularAutomataParams
+  setCellularAutomataParams: (params: CellularAutomataParams) => void
+  flowFieldParams: FlowFieldParams
+  setFlowFieldParams: (params: FlowFieldParams) => void
+  reactionDiffusionParams: ReactionDiffusionParams
+  setReactionDiffusionParams: (params: ReactionDiffusionParams) => void
 }
 
 export function RightSidebar({
@@ -41,6 +65,16 @@ export function RightSidebar({
   setCanvasBackgrounds,
   selectedBgIndex,
   setSelectedBgIndex,
+  perlinNoiseParams,
+  setPerlinNoiseParams,
+  strangeAttractorParams,
+  setStrangeAttractorParams,
+  cellularAutomataParams,
+  setCellularAutomataParams,
+  flowFieldParams,
+  setFlowFieldParams,
+  reactionDiffusionParams,
+  setReactionDiffusionParams,
 }: RightSidebarProps) {
   return (
     <div className="h-full bg-card flex flex-col overflow-hidden">
@@ -85,7 +119,51 @@ export function RightSidebar({
             </div>
           )}
 
+          {mode === "perlin-noise" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Noise Canvas</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Perlin noise with customizable octaves and color mapping
+              </p>
+              <PerlinNoiseControls params={perlinNoiseParams} setParams={setPerlinNoiseParams} />
+            </div>
+          )}
 
+          {mode === "strange-attractor" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Strange Orbits</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Chaotic dynamical systems with Lorenz, Aizawa & De Jong
+              </p>
+              <StrangeAttractorControls params={strangeAttractorParams} setParams={setStrangeAttractorParams} />
+            </div>
+          )}
+
+          {mode === "cellular-automata" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Grid Genesis</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Conway's Game of Life & cellular automata simulations
+              </p>
+              <CellularAutomataControls params={cellularAutomataParams} setParams={setCellularAutomataParams} />
+            </div>
+          )}
+
+          {mode === "flow-field" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Vector Dreams</h3>
+              <p className="text-xs text-muted-foreground mb-3">Particle flow fields with Perlin noise guidance</p>
+              <FlowFieldControls params={flowFieldParams} setParams={setFlowFieldParams} />
+            </div>
+          )}
+
+          {mode === "reaction-diffusion" && (
+            <div>
+              <h3 className="text-xs font-black tracking-wider uppercase mb-4 text-muted-foreground">Morphic Bloom</h3>
+              <p className="text-xs text-muted-foreground mb-3">Gray-Scott reaction-diffusion pattern generation</p>
+              <ReactionDiffusionControls params={reactionDiffusionParams} setParams={setReactionDiffusionParams} />
+            </div>
+          )}
 
           {/* Canvas settings always visible */}
           <div className="border-t-2 border-foreground/10 pt-4">

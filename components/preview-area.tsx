@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useRef, useCallback, useState } from "react"
 import { Canvas } from "./canvas"
 import { GradientCenterHandle } from "./gradient-center-handle"
@@ -8,6 +10,11 @@ import type {
   ChaosGameParams,
   MandelbrotParams,
   Mode,
+  PerlinNoiseParams,
+  StrangeAttractorParams,
+  CellularAutomataParams,
+  FlowFieldParams,
+  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface PreviewAreaProps {
@@ -21,6 +28,11 @@ interface PreviewAreaProps {
   setMandelbrotParams: (params: MandelbrotParams) => void
   canvasBackgrounds: string[]
   selectedBgIndex: number | null
+  perlinNoiseParams?: PerlinNoiseParams
+  strangeAttractorParams?: StrangeAttractorParams
+  cellularAutomataParams?: CellularAutomataParams
+  flowFieldParams?: FlowFieldParams
+  reactionDiffusionParams?: ReactionDiffusionParams
 }
 
 export function PreviewArea({
@@ -34,6 +46,11 @@ export function PreviewArea({
   setMandelbrotParams,
   canvasBackgrounds,
   selectedBgIndex,
+  perlinNoiseParams,
+  strangeAttractorParams,
+  cellularAutomataParams,
+  flowFieldParams,
+  reactionDiffusionParams,
 }: PreviewAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const bgColor =
@@ -43,33 +60,39 @@ export function PreviewArea({
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 })
 
   // Handle mouse interactions for Mandelbrot/Julia sets
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (mode !== "mandelbrot") return
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (mode !== "mandelbrot") return
 
-    // Start dragging for pan (both Mandelbrot and Julia modes)
-    setIsDragging(true)
-    setLastMousePos({ x: e.clientX, y: e.clientY })
-  }, [mode, setMandelbrotParams])
+      // Start dragging for pan (both Mandelbrot and Julia modes)
+      setIsDragging(true)
+      setLastMousePos({ x: e.clientX, y: e.clientY })
+    },
+    [mode, setMandelbrotParams],
+  )
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || mode !== "mandelbrot") return
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging || mode !== "mandelbrot") return
 
-    const deltaX = e.clientX - lastMousePos.x
-    const deltaY = e.clientY - lastMousePos.y
+      const deltaX = e.clientX - lastMousePos.x
+      const deltaY = e.clientY - lastMousePos.y
 
-    // Convert pixel movement to complex plane movement
-    // Scale based on current zoom level
-    const scale = 4 / mandelbrotParams.zoom // Base range is [-2, 2] at zoom 1
-    const panScale = scale / 400 // Adjust sensitivity
+      // Convert pixel movement to complex plane movement
+      // Scale based on current zoom level
+      const scale = 4 / mandelbrotParams.zoom // Base range is [-2, 2] at zoom 1
+      const panScale = scale / 400 // Adjust sensitivity
 
-    setMandelbrotParams({
-      ...mandelbrotParams,
-      panX: mandelbrotParams.panX + deltaX * panScale,
-      panY: mandelbrotParams.panY + deltaY * panScale,
-    })
+      setMandelbrotParams({
+        ...mandelbrotParams,
+        panX: mandelbrotParams.panX + deltaX * panScale,
+        panY: mandelbrotParams.panY + deltaY * panScale,
+      })
 
-    setLastMousePos({ x: e.clientX, y: e.clientY })
-  }, [isDragging, mode, mandelbrotParams, setMandelbrotParams, lastMousePos])
+      setLastMousePos({ x: e.clientX, y: e.clientY })
+    },
+    [isDragging, mode, mandelbrotParams, setMandelbrotParams, lastMousePos],
+  )
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -80,19 +103,22 @@ export function PreviewArea({
     setIsDragging(false)
   }, [])
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (mode !== "mandelbrot") return
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (mode !== "mandelbrot") return
 
-    e.preventDefault()
+      e.preventDefault()
 
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
-    const newZoom = mandelbrotParams.zoom * zoomFactor
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
+      const newZoom = mandelbrotParams.zoom * zoomFactor
 
-    setMandelbrotParams({
-      ...mandelbrotParams,
-      zoom: newZoom,
-    })
-  }, [mode, mandelbrotParams, setMandelbrotParams])
+      setMandelbrotParams({
+        ...mandelbrotParams,
+        zoom: newZoom,
+      })
+    },
+    [mode, mandelbrotParams, setMandelbrotParams],
+  )
 
   return (
     <div className="flex-1 bg-background p-8 flex flex-col justify-center items-center">
@@ -115,6 +141,11 @@ export function PreviewArea({
           gradient={gradient}
           chaosGameParams={chaosGameParams}
           mandelbrotParams={mandelbrotParams}
+          perlinNoiseParams={perlinNoiseParams}
+          strangeAttractorParams={strangeAttractorParams}
+          cellularAutomataParams={cellularAutomataParams}
+          flowFieldParams={flowFieldParams}
+          reactionDiffusionParams={reactionDiffusionParams}
         />
         {showCenterHandle && mode === "gradient" && (
           <GradientCenterHandle gradient={gradient} setGradient={setGradient} />
@@ -123,9 +154,7 @@ export function PreviewArea({
 
       {/* Instructions for Mandelbrot mode */}
       {mode === "mandelbrot" && (
-        <div className="mt-4 text-xs text-muted-foreground text-center">
-          Scroll to zoom • Click and drag to pan
-        </div>
+        <div className="mt-4 text-xs text-muted-foreground text-center">Scroll to zoom • Click and drag to pan</div>
       )}
     </div>
   )

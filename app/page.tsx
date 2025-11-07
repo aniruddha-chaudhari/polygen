@@ -50,38 +50,84 @@ export interface MandelbrotParams {
   isJuliaSet: boolean
 }
 
-
-
-export type Mode = "template" | "gradient" | "chaos-game" | "mandelbrot"
-
-const defaultGradientState: GradientState = {
-  type: "linear",
-  colorStops: [
-    { color: "#a78bfa", position: 0, alpha: 1 },
-    { color: "#ec4899", position: 100, alpha: 1 },
-  ],
-  angle: 135,
-  centerX: 50,
-  centerY: 50,
-  shape: "circle",
-  shapeRatio: 1,
-  meshGrid: [
-    ["#ff0000", "#00ff00", "#0000ff"],
-    ["#ffff00", "#ff00ff", "#00ffff"],
-    ["#ff8800", "#00ff88", "#8800ff"],
-  ],
-  meshSpread: 50,
-  repeatSize: 100,
-  noiseEnabled: false,
-  noiseAmount: 0,
-  noiseType: "smooth",
-  conicSmoothTransition: true,
+export interface PerlinNoiseParams {
+  scale: number
+  octaves: number
+  threshold: number
+  colorPalette: ColorStop[]
 }
+
+export interface ReactionDiffusionParams {
+  preset: "spots" | "stripes" | "labyrinth"
+  feedRate: number
+  killRate: number
+  speed: number
+}
+
+export interface StrangeAttractorParams {
+  type: "lorenz" | "aizawa" | "dejong"
+  a: number
+  b: number
+  c: number
+  d: number
+  pointDensity: number
+  lineWeight: number
+  color: string
+}
+
+export interface CellularAutomataParams {
+  algorithm: "conway" | "cyclic"
+  ruleSet: string
+  initialState: "random" | "centered"
+  colorLive: string
+  colorDead: string
+}
+
+export interface FlowFieldParams {
+  particleCount: number
+  noiseScale: number
+  stepLength: number
+  lineWeight: number
+  opacity: number
+}
+
+export type Mode =
+  | "template"
+  | "gradient"
+  | "chaos-game"
+  | "mandelbrot"
+  | "perlin-noise"
+  | "strange-attractor"
+  | "cellular-automata"
+  | "flow-field"
+  | "reaction-diffusion"
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("gradient")
   const [selectedTemplate, setSelectedTemplate] = useState(0)
-  const [gradient, setGradient] = useState<GradientState>(defaultGradientState)
+  const [gradient, setGradient] = useState<GradientState>({
+    type: "linear",
+    colorStops: [
+      { color: "#a78bfa", position: 0, alpha: 1 },
+      { color: "#ec4899", position: 100, alpha: 1 },
+    ],
+    angle: 135,
+    centerX: 50,
+    centerY: 50,
+    shape: "circle",
+    shapeRatio: 1,
+    meshGrid: [
+      ["#ff0000", "#00ff00", "#0000ff"],
+      ["#ffff00", "#ff00ff", "#00ffff"],
+      ["#ff8800", "#00ff88", "#8800ff"],
+    ],
+    meshSpread: 50,
+    repeatSize: 100,
+    noiseEnabled: false,
+    noiseAmount: 0,
+    noiseType: "smooth",
+    conicSmoothTransition: true,
+  })
   const [canvasBackgrounds, setCanvasBackgrounds] = useState<string[]>([])
   const [selectedBgIndex, setSelectedBgIndex] = useState<number | null>(null)
 
@@ -108,7 +154,49 @@ export default function Home() {
     isJuliaSet: false,
   })
 
+  const [perlinNoiseParams, setPerlinNoiseParams] = useState<PerlinNoiseParams>({
+    scale: 0.5,
+    octaves: 4,
+    threshold: 0.5,
+    colorPalette: [
+      { color: "#000000", position: 0, alpha: 1 },
+      { color: "#ffffff", position: 100, alpha: 1 },
+    ],
+  })
 
+  const [strangeAttractorParams, setStrangeAttractorParams] = useState<StrangeAttractorParams>({
+    type: "lorenz",
+    a: 10,
+    b: 28,
+    c: 8 / 3,
+    d: 0,
+    pointDensity: 10000,
+    lineWeight: 1,
+    color: "#a78bfa",
+  })
+
+  const [cellularAutomataParams, setCellularAutomataParams] = useState<CellularAutomataParams>({
+    algorithm: "conway",
+    ruleSet: "B3/S23",
+    initialState: "random",
+    colorLive: "#a78bfa",
+    colorDead: "#0a0a0a",
+  })
+
+  const [flowFieldParams, setFlowFieldParams] = useState<FlowFieldParams>({
+    particleCount: 1000,
+    noiseScale: 0.01,
+    stepLength: 100,
+    lineWeight: 1,
+    opacity: 0.5,
+  })
+
+  const [reactionDiffusionParams, setReactionDiffusionParams] = useState<ReactionDiffusionParams>({
+    preset: "spots",
+    feedRate: 0.055,
+    killRate: 0.062,
+    speed: 1,
+  })
 
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
@@ -154,6 +242,16 @@ export default function Home() {
               setChaosGameParams={setChaosGameParams}
               mandelbrotParams={mandelbrotParams}
               setMandelbrotParams={setMandelbrotParams}
+              perlinNoiseParams={perlinNoiseParams}
+              setPerlinNoiseParams={setPerlinNoiseParams}
+              strangeAttractorParams={strangeAttractorParams}
+              setStrangeAttractorParams={setStrangeAttractorParams}
+              cellularAutomataParams={cellularAutomataParams}
+              setCellularAutomataParams={setCellularAutomataParams}
+              flowFieldParams={flowFieldParams}
+              setFlowFieldParams={setFlowFieldParams}
+              reactionDiffusionParams={reactionDiffusionParams}
+              setReactionDiffusionParams={setReactionDiffusionParams}
             />
           </div>
 
@@ -177,6 +275,11 @@ export default function Home() {
             chaosGameParams={chaosGameParams}
             mandelbrotParams={mandelbrotParams}
             setMandelbrotParams={setMandelbrotParams}
+            perlinNoiseParams={perlinNoiseParams}
+            strangeAttractorParams={strangeAttractorParams}
+            cellularAutomataParams={cellularAutomataParams}
+            flowFieldParams={flowFieldParams}
+            reactionDiffusionParams={reactionDiffusionParams}
             canvasBackgrounds={canvasBackgrounds}
             selectedBgIndex={selectedBgIndex}
           />
@@ -209,6 +312,16 @@ export default function Home() {
               setChaosGameParams={setChaosGameParams}
               mandelbrotParams={mandelbrotParams}
               setMandelbrotParams={setMandelbrotParams}
+              perlinNoiseParams={perlinNoiseParams}
+              setPerlinNoiseParams={setPerlinNoiseParams}
+              strangeAttractorParams={strangeAttractorParams}
+              setStrangeAttractorParams={setStrangeAttractorParams}
+              cellularAutomataParams={cellularAutomataParams}
+              setCellularAutomataParams={setCellularAutomataParams}
+              flowFieldParams={flowFieldParams}
+              setFlowFieldParams={setFlowFieldParams}
+              reactionDiffusionParams={reactionDiffusionParams}
+              setReactionDiffusionParams={setReactionDiffusionParams}
               canvasBackgrounds={canvasBackgrounds}
               setCanvasBackgrounds={setCanvasBackgrounds}
               selectedBgIndex={selectedBgIndex}

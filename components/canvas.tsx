@@ -1,11 +1,17 @@
 "use client"
 
+import type React from "react"
+
 import { useRef, useEffect, useCallback } from "react"
+import type { GradientState, ChaosGameParams, MandelbrotParams, Mode } from "@/app/page"
+import { PerlinNoise } from "@/lib/perlin"
+import { AttractorEquations, type AttractorPoint } from "@/lib/attractor-equations"
 import type {
-  GradientState,
-  ChaosGameParams,
-  MandelbrotParams,
-  Mode,
+  PerlinNoiseParams,
+  StrangeAttractorParams,
+  CellularAutomataParams,
+  FlowFieldParams,
+  ReactionDiffusionParams,
 } from "@/app/page"
 
 interface CanvasProps {
@@ -14,6 +20,11 @@ interface CanvasProps {
   gradient: GradientState
   chaosGameParams: ChaosGameParams
   mandelbrotParams: MandelbrotParams
+  perlinNoiseParams?: PerlinNoiseParams
+  strangeAttractorParams?: StrangeAttractorParams
+  cellularAutomataParams?: CellularAutomataParams
+  flowFieldParams?: FlowFieldParams
+  reactionDiffusionParams?: ReactionDiffusionParams
 }
 
 const templates = [
@@ -25,8 +36,7 @@ const templates = [
   { name: "Sky", colors: ["#87ceeb", "#e0f6ff"] },
 ]
 
-// Number of worker threads to use (typically CPU cores - 1)
-const NUM_WORKERS = typeof navigator !== 'undefined' ? Math.max(2, navigator.hardwareConcurrency || 4) : 4;
+const NUM_WORKERS = typeof navigator !== "undefined" ? Math.max(2, navigator.hardwareConcurrency || 4) : 4
 
 export function Canvas({
   mode,
@@ -34,6 +44,11 @@ export function Canvas({
   gradient,
   chaosGameParams,
   mandelbrotParams,
+  perlinNoiseParams,
+  strangeAttractorParams,
+  cellularAutomataParams,
+  flowFieldParams,
+  reactionDiffusionParams,
 }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isRenderingRef = useRef(false)
@@ -41,7 +56,7 @@ export function Canvas({
   const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const activeWorkersRef = useRef<Worker[]>([])
   const renderIdRef = useRef(0)
-  const lastParamsRef = useRef<string>('')
+  const lastParamsRef = useRef<string>("")
 
   const renderGradient = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -80,74 +95,65 @@ export function Canvas({
     const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true })
     if (!ctx) return
 
-    // Only resize if dimensions actually changed
     const currentWidth = canvas.offsetWidth
     const currentHeight = canvas.offsetHeight
-    
+
     const needsResize = canvas.width !== currentWidth || canvas.height !== currentHeight
-    
+
     if (needsResize) {
       canvas.width = currentWidth
       canvas.height = currentHeight
-      
-      // Recreate offscreen canvas
-      offscreenCanvasRef.current = document.createElement('canvas')
+
+      offscreenCanvasRef.current = document.createElement("canvas")
       offscreenCanvasRef.current.width = currentWidth
       offscreenCanvasRef.current.height = currentHeight
     }
 
-    // For Mandelbrot, check if params actually changed to avoid unnecessary renders
     if (mode === "mandelbrot") {
       const paramsString = JSON.stringify(mandelbrotParams)
       if (paramsString === lastParamsRef.current && !needsResize) {
-        // Parameters haven't changed, skip render
         return
       }
       lastParamsRef.current = paramsString
     }
 
-    // Cancel any pending workers
-    activeWorkersRef.current.forEach(worker => worker.terminate())
+    activeWorkersRef.current.forEach((worker) => worker.terminate())
     activeWorkersRef.current = []
 
-    // Clear any pending render timeout
     if (renderTimeoutRef.current) {
       clearTimeout(renderTimeoutRef.current)
     }
 
-    // Increment render ID to invalidate old renders
     renderIdRef.current++
     const currentRenderId = renderIdRef.current
 
-    // Debounce rendering for Mandelbrot to reduce flickering during drag/zoom
     if (mode === "mandelbrot") {
       renderTimeoutRef.current = setTimeout(() => {
         const offscreenCtx = offscreenCanvasRef.current?.getContext("2d", { alpha: false })
         if (offscreenCtx && offscreenCanvasRef.current) {
           drawMandelbrotAsync(
-            offscreenCtx, 
-            offscreenCanvasRef.current.width, 
-            offscreenCanvasRef.current.height, 
+            offscreenCtx,
+            offscreenCanvasRef.current.width,
+            offscreenCanvasRef.current.height,
             mandelbrotParams,
             currentRenderId,
-            activeWorkersRef
-          ).then(() => {
-            // Only update if this render is still current
-            if (currentRenderId === renderIdRef.current && offscreenCanvasRef.current) {
-              ctx.drawImage(offscreenCanvasRef.current, 0, 0)
-            }
-          }).catch((err) => {
-            // Render was cancelled or failed, ignore
-            if (err.message !== 'Render cancelled') {
-              console.error('Render error:', err)
-            }
-          })
+            activeWorkersRef,
+          )
+            .then(() => {
+              if (currentRenderId === renderIdRef.current && offscreenCanvasRef.current) {
+                ctx.drawImage(offscreenCanvasRef.current, 0, 0)
+              }
+            })
+            .catch((err) => {
+              if (err.message !== "Render cancelled") {
+                console.error("Render error:", err)
+              }
+            })
         }
-      }, 150) // Increased debounce to 150ms for even smoother dragging
+      }, 150)
       return
     }
 
-    // For other modes, render directly (they're fast)
     if (mode === "template") {
       const template = templates[selectedTemplate % templates.length]
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
@@ -159,14 +165,23 @@ export function Canvas({
       renderGradient(ctx, canvas.width, canvas.height)
     } else if (mode === "chaos-game") {
       drawChaosGame(ctx, canvas.width, canvas.height, chaosGameParams)
+    } else if (mode === "perlin-noise" && perlinNoiseParams) {
+      drawPerlinNoise(ctx, canvas.width, canvas.height, perlinNoiseParams)
+    } else if (mode === "strange-attractor" && strangeAttractorParams) {
+      drawStrangeAttractor(ctx, canvas.width, canvas.height, strangeAttractorParams)
+    } else if (mode === "cellular-automata" && cellularAutomataParams) {
+      drawCellularAutomata(ctx, canvas.width, canvas.height, cellularAutomataParams)
+    } else if (mode === "flow-field" && flowFieldParams) {
+      drawFlowField(ctx, canvas.width, canvas.height, flowFieldParams)
+    } else if (mode === "reaction-diffusion" && reactionDiffusionParams) {
+      drawReactionDiffusion(ctx, canvas.width, canvas.height, reactionDiffusionParams)
     }
 
-    // Cleanup timeout on unmount
     return () => {
       if (renderTimeoutRef.current) {
         clearTimeout(renderTimeoutRef.current)
       }
-      activeWorkersRef.current.forEach(worker => worker.terminate())
+      activeWorkersRef.current.forEach((worker) => worker.terminate())
       activeWorkersRef.current = []
     }
   }, [
@@ -175,6 +190,11 @@ export function Canvas({
     gradient,
     chaosGameParams,
     mandelbrotParams,
+    perlinNoiseParams,
+    strangeAttractorParams,
+    cellularAutomataParams,
+    flowFieldParams,
+    reactionDiffusionParams,
     renderGradient,
   ])
 
@@ -200,14 +220,12 @@ function drawChaosGame(ctx: CanvasRenderingContext2D, width: number, height: num
   const centerY = height / 2
   const radius = Math.min(width, height) / 3
 
-  // Generate polygon vertices
   const vertices: [number, number][] = []
   for (let i = 0; i < params.sides; i++) {
     const angle = (Math.PI * 2 * i) / params.sides
     vertices.push([centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle)])
   }
 
-  // Plot chaos game points
   let x = centerX
   let y = centerY
   ctx.fillStyle = params.pointColor
@@ -221,17 +239,14 @@ function drawChaosGame(ctx: CanvasRenderingContext2D, width: number, height: num
 }
 
 async function drawMandelbrotAsync(
-  ctx: CanvasRenderingContext2D, 
-  width: number, 
-  height: number, 
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
   params: MandelbrotParams,
   renderId?: number,
-  activeWorkersRef?: React.MutableRefObject<Worker[]>
+  activeWorkersRef?: React.MutableRefObject<Worker[]>,
 ) {
-  // Don't clear the canvas here - keep previous frame visible during rendering
-
-  // Check if Workers are supported
-  if (typeof Worker === 'undefined') {
+  if (typeof Worker === "undefined") {
     drawMandelbrotSingleThreaded(ctx, width, height, params)
     return
   }
@@ -245,19 +260,19 @@ async function drawMandelbrotAsync(
     for (let i = 0; i < NUM_WORKERS; i++) {
       const startRow = i * rowsPerWorker
       const endRow = Math.min((i + 1) * rowsPerWorker, height)
-      
+
       if (startRow >= height) break
 
       const promise = new Promise<void>((resolve, reject) => {
         try {
-          const worker = new Worker('/mandelbrot-worker.js')
+          const worker = new Worker("/mandelbrot-worker.js")
           workers.push(worker)
-          
+
           const timeout = setTimeout(() => {
             worker.terminate()
-            reject(new Error('Worker timeout'))
-          }, 10000) // 10 second timeout
-          
+            reject(new Error("Worker timeout"))
+          }, 10000)
+
           worker.onmessage = (e) => {
             clearTimeout(timeout)
             const { imageData: workerData, startRow: sr } = e.data
@@ -280,32 +295,33 @@ async function drawMandelbrotAsync(
       promises.push(promise)
     }
 
-    // Track active workers
     if (activeWorkersRef) {
       activeWorkersRef.current = workers
     }
 
     await Promise.all(promises)
-    
-    // Terminate all workers
-    workers.forEach(w => w.terminate())
+
+    workers.forEach((w) => w.terminate())
     if (activeWorkersRef) {
       activeWorkersRef.current = []
     }
-    
-    // Only update canvas after all workers complete
+
     ctx.putImageData(imageData, 0, 0)
   } catch (error) {
-    console.warn('Worker rendering failed, falling back to single-threaded:', error)
+    console.warn("Worker rendering failed, falling back to single-threaded:", error)
     drawMandelbrotSingleThreaded(ctx, width, height, params)
   }
 }
 
-function drawMandelbrotSingleThreaded(ctx: CanvasRenderingContext2D, width: number, height: number, params: MandelbrotParams) {
+function drawMandelbrotSingleThreaded(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: MandelbrotParams,
+) {
   const imageData = ctx.createImageData(width, height)
   const data = imageData.data
 
-  // Dynamically scale iterations based on zoom level
   const baseIterations = params.iterations
   const zoomFactor = Math.log10(params.zoom + 1)
   const dynamicIterations = Math.min(1000, Math.max(baseIterations, Math.floor(baseIterations * (1 + zoomFactor))))
@@ -386,4 +402,228 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
     }
   }
   return { r: 0, g: 0, b: 0 }
+}
+
+function drawPerlinNoise(ctx: CanvasRenderingContext2D, width: number, height: number, params: PerlinNoiseParams) {
+  const perlin = new PerlinNoise()
+  const imageData = ctx.createImageData(width, height)
+  const data = imageData.data
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const nx = (x / width) * params.scale
+      const ny = (y / height) * params.scale
+      const value = perlin.octaveNoise(nx, ny, params.octaves)
+      const normalized = (value + 1) / 2
+      const isAboveThreshold = normalized > params.threshold
+
+      const ratio = isAboveThreshold ? normalized : 0
+      const idx = (y * width + x) * 4
+      const color = interpolateColor(params.colorPalette, ratio * 100)
+
+      data[idx] = color.r
+      data[idx + 1] = color.g
+      data[idx + 2] = color.b
+      data[idx + 3] = 255
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+}
+
+function drawStrangeAttractor(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: StrangeAttractorParams,
+) {
+  ctx.fillStyle = "#0a0a0a"
+  ctx.fillRect(0, 0, width, height)
+  ctx.strokeStyle = params.color
+  ctx.lineWidth = params.lineWeight
+  ctx.globalAlpha = 0.6
+
+  let point: AttractorPoint = { x: 1, y: 1, z: 1 }
+  const scale = Math.min(width, height) / 50
+
+  for (let i = 0; i < params.pointDensity; i++) {
+    if (params.type === "lorenz") {
+      point = AttractorEquations.lorenzStep(point, params.a, params.b, params.c)
+    } else if (params.type === "aizawa") {
+      point = AttractorEquations.aizawaStep(point, params.a, params.b, params.c)
+    } else if (params.type === "dejong") {
+      point = AttractorEquations.deJongStep(point, params.a, params.b, params.c, params.d)
+    }
+
+    const px = width / 2 + point.x * scale
+    const py = height / 2 + point.y * scale
+
+    if (i === 0) {
+      ctx.beginPath()
+      ctx.moveTo(px, py)
+    } else {
+      ctx.lineTo(px, py)
+    }
+
+    if (i % 100 === 0) {
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(px, py)
+    }
+  }
+
+  ctx.stroke()
+  ctx.globalAlpha = 1
+}
+
+function drawCellularAutomata(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: CellularAutomataParams,
+) {
+  const cellSize = 4
+  const cols = Math.floor(width / cellSize)
+  const rows = Math.floor(height / cellSize)
+
+  let grid = Array(rows)
+    .fill(null)
+    .map(() => Array(cols).fill(params.initialState === "random" ? Math.random() > 0.7 : 0))
+
+  if (params.initialState === "centered") {
+    grid[Math.floor(rows / 2)][Math.floor(cols / 2)] = 1
+  }
+
+  for (let gen = 0; gen < 10; gen++) {
+    const newGrid = JSON.parse(JSON.stringify(grid))
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        let alive = 0
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue
+            const ny = (y + dy + rows) % rows
+            const nx = (x + dx + cols) % cols
+            alive += grid[ny][nx] ? 1 : 0
+          }
+        }
+
+        if (params.algorithm === "conway") {
+          newGrid[y][x] = (grid[y][x] && (alive === 2 || alive === 3)) || (!grid[y][x] && alive === 3) ? 1 : 0
+        }
+      }
+    }
+    grid = newGrid
+  }
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      ctx.fillStyle = grid[y][x] ? params.colorLive : params.colorDead
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize)
+    }
+  }
+}
+
+function drawFlowField(ctx: CanvasRenderingContext2D, width: number, height: number, params: FlowFieldParams) {
+  const perlin = new PerlinNoise()
+  ctx.fillStyle = "#0a0a0a"
+  ctx.fillRect(0, 0, width, height)
+
+  const particles: Array<{ x: number; y: number }> = []
+  for (let i = 0; i < params.particleCount; i++) {
+    particles.push({ x: Math.random() * width, y: Math.random() * height })
+  }
+
+  ctx.strokeStyle = "#a78bfa"
+  ctx.globalAlpha = params.opacity
+  ctx.lineWidth = params.lineWeight
+
+  for (const particle of particles) {
+    ctx.beginPath()
+    let x = particle.x
+    let y = particle.y
+    ctx.moveTo(x, y)
+
+    for (let i = 0; i < 50; i++) {
+      const angle = perlin.noise(x * params.noiseScale, y * params.noiseScale) * Math.PI * 2
+      x += Math.cos(angle) * params.stepLength
+      y += Math.sin(angle) * params.stepLength
+
+      if (x < 0 || x > width || y < 0 || y > height) break
+      ctx.lineTo(x, y)
+    }
+
+    ctx.stroke()
+  }
+
+  ctx.globalAlpha = 1
+}
+
+function drawReactionDiffusion(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: ReactionDiffusionParams,
+) {
+  const scale = 4
+  const cols = Math.floor(width / scale)
+  const rows = Math.floor(height / scale)
+
+  let u = Array(rows)
+    .fill(null)
+    .map(() => Array(cols).fill(1))
+  let v = Array(rows)
+    .fill(null)
+    .map(() => Array(cols).fill(0))
+
+  for (let y = Math.floor(rows / 2) - 5; y < Math.floor(rows / 2) + 5; y++) {
+    for (let x = Math.floor(cols / 2) - 5; x < Math.floor(cols / 2) + 5; x++) {
+      if (y >= 0 && y < rows && x >= 0 && x < cols) {
+        v[y][x] = 1
+      }
+    }
+  }
+
+  const du = 0.2082
+  const dv = 0.105
+  const dt = 1
+
+  for (let t = 0; t < 50; t++) {
+    const newU = u.map((r) => [...r])
+    const newV = v.map((r) => [...r])
+
+    for (let y = 1; y < rows - 1; y++) {
+      for (let x = 1; x < cols - 1; x++) {
+        const uLap = (u[y][x - 1] + u[y][x + 1] + u[y - 1][x] + u[y + 1][x] - 4 * u[y][x]) / 4
+        const vLap = (v[y][x - 1] + v[y][x + 1] + v[y - 1][x] + v[y + 1][x] - 4 * v[y][x]) / 4
+
+        newU[y][x] = u[y][x] + (du * uLap - u[y][x] * v[y][x] * v[y][x] + params.feedRate * (1 - u[y][x])) * dt
+        newV[y][x] =
+          v[y][x] + (dv * vLap + u[y][x] * v[y][x] * v[y][x] - (params.killRate + params.feedRate) * v[y][x]) * dt
+
+        newU[y][x] = Math.max(0, Math.min(1, newU[y][x]))
+        newV[y][x] = Math.max(0, Math.min(1, newV[y][x]))
+      }
+    }
+
+    u = newU
+    v = newV
+  }
+
+  const imageData = ctx.createImageData(width, height)
+  const data = imageData.data
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const val = Math.floor((1 - v[y][x]) * 255)
+      const idx = (y * scale * width + x * scale) * 4
+      data[idx] = val
+      data[idx + 1] = val
+      data[idx + 2] = val
+      data[idx + 3] = 255
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
 }

@@ -33,13 +33,13 @@ The infinite zoom feature now uses Web Workers for multi-threaded rendering to s
 ## Technical Details
 
 ### Worker Communication
-```javascript
+\`\`\`javascript
 // Main thread sends work to worker
 worker.postMessage({ width, height, params, startRow, endRow })
 
 // Worker sends back calculated image data
 worker.postMessage({ imageData, startRow, endRow }, [imageData.buffer])
-```
+\`\`\`
 
 ### Memory Optimization
 - Uses transferable objects (`ArrayBuffer`) to avoid copying large image data
